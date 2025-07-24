@@ -86,13 +86,9 @@ export default function TrackerPage() {
     <>
       {/* MAIN FIX: Added overflow-x-hidden to prevent horizontal scroll */}
       <div className="w-full overflow-x-hidden">
-        <div className="flex justify-between items-center mb-6 gap-2 max-w-full">
-          <h1 className="text-2xl font-bold">🎬 Movie & Series Tracker</h1>
-          <div className="text-xs text-muted-foreground truncate">{email}</div>
-        </div>
 
         {/* Added max-w-full to prevent overflow */}
-        <Tabs defaultValue="movies" className="mb-8 max-w-full">
+        <Tabs defaultValue="movies" className="my-8 max-w-full">
           <TabsList className="w-full grid grid-cols-2 mb-4">
             <TabsTrigger value="movies">Movies</TabsTrigger>
             <TabsTrigger value="series">Series</TabsTrigger>

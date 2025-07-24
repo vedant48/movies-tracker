@@ -64,11 +64,13 @@ const Explore = () => {
           {items.map((item) => (
             <div key={item.id} className="w-[150px] flex-shrink-0">
               {item.poster_path && (
-                <img
-                  src={`${IMAGE_BASE_URL}${item.poster_path}`}
-                  alt={item.title || item.name}
-                  className="rounded-lg w-full h-[225px] object-cover mb-2 shadow-md hover:shadow-lg transition-shadow"
-                />
+                <Link to={`/movie/${item.id}`}>
+                  <img
+                    src={`${IMAGE_BASE_URL}${item.poster_path}`}
+                    alt={item.title || item.name}
+                    className="rounded-lg w-full h-[225px] object-cover mb-2 shadow-md hover:shadow-lg transition-shadow"
+                  />
+                </Link>
               )}
               <div className="text-sm font-medium line-clamp-2 text-center px-1">{item.title || item.name}</div>
               <div className="text-xs text-gray-500 text-center mt-1">{item.release_date || item.first_air_date}</div>

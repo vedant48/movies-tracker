@@ -11,6 +11,7 @@ import ExplorePage from "./pages/explore";
 
 import data from "./data.json";
 import { ChartAreaInteractive } from "./components/chart-area-interactive";
+import MoviePage from "./components/movie-page";
 
 // Dashboard component
 function Dashboard() {
@@ -106,6 +107,7 @@ export default function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/movie/:id" element={<MoviePage />} />
         </Routes>
       </SidebarInset>
     </SidebarProvider>
