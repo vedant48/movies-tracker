@@ -9,15 +9,7 @@ import { Star, Clock, Calendar, Play, Info, Popcorn, User, Users, Film, X } from
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
-} from "@/components/ui/drawer";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 
 // Updated interfaces
 interface Movie {
@@ -263,9 +255,10 @@ export default function MoviePage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      {/* Backdrop */}
-      {/* {movie.backdrop_path && (
+    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <div className="px-4 lg:px-6">
+        {/* Backdrop */}
+        {/* {movie.backdrop_path && (
         <div className="relative rounded-xl overflow-hidden mb-8 h-64 md:h-80">
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10" />
           <img
@@ -275,125 +268,79 @@ export default function MoviePage() {
           />
         </div>
       )} */}
-
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Poster */}
-        <div className="w-full md:w-1/3">
-          <Card className="overflow-hidden border-0 shadow-lg py-0">
-            {movie.poster_path ? (
-              <img
-                src={`${IMAGE_BASE_URL}${movie.poster_path}`}
-                alt={movie.title}
-                className="w-full object-cover rounded-lg"
-              />
-            ) : (
-              <div className="bg-muted border rounded-xl w-full aspect-[2/3] flex items-center justify-center">
-                <Popcorn className="w-16 h-16 text-muted-foreground" />
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* Movie Details */}
-        <div className="w-full md:w-2/3">
-          <Card className="border-0 shadow-none">
-            <CardHeader>
-              <CardTitle className="text-3xl md:text-4xl font-bold tracking-tight">{movie.title}</CardTitle>
-
-              {movie.tagline && (
-                <CardDescription className="text-lg italic text-muted-foreground">"{movie.tagline}"</CardDescription>
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Poster */}
+          <div className="w-full md:w-1/3">
+            <Card className="overflow-hidden border-0 shadow-lg py-0">
+              {movie.poster_path ? (
+                <img
+                  src={`${IMAGE_BASE_URL}${movie.poster_path}`}
+                  alt={movie.title}
+                  className="w-full object-cover rounded-lg"
+                />
+              ) : (
+                <div className="bg-muted border rounded-xl w-full aspect-[2/3] flex items-center justify-center">
+                  <Popcorn className="w-16 h-16 text-muted-foreground" />
+                </div>
               )}
+            </Card>
+          </div>
 
-              <div className="flex items-center gap-3 mt-2">
-                <div className="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full">
-                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  <span className="font-semibold">{movie.vote_average.toFixed(1)}</span>
-                </div>
+          {/* Movie Details */}
+          <div className="w-full md:w-2/3">
+            <Card className="border-0 shadow-none">
+              <CardHeader>
+                <CardTitle className="text-3xl md:text-4xl font-bold tracking-tight">{movie.title}</CardTitle>
 
-                <div className="flex items-center gap-1 text-sm">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>{new Date(movie.release_date).getFullYear()}</span>
-                </div>
+                {movie.tagline && (
+                  <CardDescription className="text-lg italic text-muted-foreground">"{movie.tagline}"</CardDescription>
+                )}
 
-                <div className="flex items-center gap-1 text-sm">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span>{formatRuntime(movie.runtime)}</span>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent>
-              <div className="flex flex-wrap gap-2 mb-6">
-                {movie.genres.map((genre) => (
-                  <Badge key={genre.id} variant="secondary" className="px-3 py-1 text-sm font-medium">
-                    {genre.name}
-                  </Badge>
-                ))}
-              </div>
-
-              <h3 className="text-lg font-semibold mb-3">Overview</h3>
-              <p className="text-muted-foreground mb-6 leading-relaxed">{movie.overview || "No overview available."}</p>
-
-              <Separator className="my-6" />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-full">
-                    <Info className="w-5 h-5" />
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full">
+                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    <span className="font-semibold">{movie.vote_average.toFixed(1)}</span>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <p className="font-medium">{movie.status}</p>
+
+                  <div className="flex items-center gap-1 text-sm">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span>{new Date(movie.release_date).getFullYear()}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-sm">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <span>{formatRuntime(movie.runtime)}</span>
                   </div>
                 </div>
+              </CardHeader>
 
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-full">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="12" y1="1" x2="12" y2="23"></line>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Budget</p>
-                    <p className="font-medium">{formatCurrency(movie.budget)}</p>
-                  </div>
+              <CardContent>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {movie.genres.map((genre) => (
+                    <Badge key={genre.id} variant="secondary" className="px-3 py-1 text-sm font-medium">
+                      {genre.name}
+                    </Badge>
+                  ))}
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="bg-muted p-2 rounded-full">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="12" y1="1" x2="12" y2="23"></line>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Revenue</p>
-                    <p className="font-medium">{formatCurrency(movie.revenue)}</p>
-                  </div>
-                </div>
+                <h3 className="text-lg font-semibold mb-3">Overview</h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  {movie.overview || "No overview available."}
+                </p>
 
-                {movie.original_language && (
+                <Separator className="my-6" />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-muted p-2 rounded-full">
+                      <Info className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Status</p>
+                      <p className="font-medium">{movie.status}</p>
+                    </div>
+                  </div>
+
                   <div className="flex items-center gap-3">
                     <div className="bg-muted p-2 rounded-full">
                       <svg
@@ -407,49 +354,22 @@ export default function MoviePage() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       >
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Language</p>
-                      <p className="font-medium">{movie.original_language.toUpperCase()}</p>
+                      <p className="text-sm text-muted-foreground">Budget</p>
+                      <p className="font-medium">{formatCurrency(movie.budget)}</p>
                     </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
 
-            <CardFooter className="flex flex-wrap gap-3 mt-4">
-              <Button className="gap-2">
-                <Play className="w-5 h-5" />
-                Watch Trailer
-              </Button>
-              <Button variant="outline" className="gap-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                </svg>
-                Add to Watchlist
-              </Button>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-muted p-2 rounded-full">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -457,251 +377,323 @@ export default function MoviePage() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       >
-                        <circle cx="12" cy="12" r="1"></circle>
-                        <circle cx="12" cy="5" r="1"></circle>
-                        <circle cx="12" cy="19" r="1"></circle>
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                       </svg>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>More actions</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardFooter>
-          </Card>
-        </div>
-      </div>
-
-      {/* Collection Section */}
-      {collection && collection.parts.length > 0 && (
-        <div className="mt-12">
-          <div className="flex items-center gap-3 mb-6">
-            <Film className="w-6 h-6 text-primary" />
-            <h2 className="text-2xl font-bold">The {collection.name} Collection</h2>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {collection.parts.map((item) => (
-              <Link to={`/movie/${item.id}`} key={item.id} className="group transition-all hover:scale-105">
-                <Card className="border-0 shadow-none py-0">
-                  <div className="relative">
-                    {item.poster_path ? (
-                      <img
-                        src={`${IMAGE_BASE_URL}${item.poster_path}`}
-                        alt={item.title}
-                        className="rounded-lg w-full aspect-[2/3] object-cover"
-                      />
-                    ) : (
-                      <div className="bg-muted rounded-lg w-full aspect-[2/3] flex items-center justify-center">
-                        <Film className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                    )}
-                    {item.id === movie.id && (
-                      <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 rounded-md text-xs font-medium">
-                        Current
-                      </div>
-                    )}
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Revenue</p>
+                      <p className="font-medium">{formatCurrency(movie.revenue)}</p>
+                    </div>
                   </div>
-                  <CardContent className="p-2">
-                    <h3 className="font-semibold truncate group-hover:text-primary">{item.title}</h3>
-                    <p className="text-xs text-muted-foreground">{item.release_date?.substring(0, 4) || "N/A"}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Cast & Crew Section */}
-      <div className="mt-12">
-        <div className="mb-10">
-          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <User className="w-5 h-5" /> Cast
-          </h3>
-          <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex gap-6 pb-4">
-              {topCast.map((person) => (
-                <div
-                  key={person.id}
-                  className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
-                  onClick={() => handlePersonClick(person.id)}
-                >
-                  <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
-                    {person.profile_path ? (
-                      <img
-                        src={`https://image.tmdb.org/t/p/w200${person.profile_path}`}
-                        alt={person.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
-                        <User className="w-8 h-8" />
+                  {movie.original_language && (
+                    <div className="flex items-center gap-3">
+                      <div className="bg-muted p-2 rounded-full">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="2" y1="12" x2="22" y2="12"></line>
+                          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
                       </div>
-                    )}
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium group-hover:text-primary transition-colors">{person.name}</p>
-                    {person.character && (
-                      <p className="text-xs text-muted-foreground truncate w-full">{person.character}</p>
-                    )}
-                  </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Language</p>
+                        <p className="font-medium">{movie.original_language.toUpperCase()}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
+              </CardContent>
 
-        <div>
-          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5" /> Crew
-          </h3>
-          <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex gap-6 pb-4">
-              {topCrew.map((person) => (
-                <div
-                  key={person.id}
-                  className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
-                  onClick={() => handlePersonClick(person.id)}
-                >
-                  <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
-                    {person.profile_path ? (
-                      <img
-                        src={`https://image.tmdb.org/t/p/w200${person.profile_path}`}
-                        alt={person.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
-                        <User className="w-8 h-8" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-center">
-                    <p className="font-medium group-hover:text-primary transition-colors">{person.name}</p>
-                    {person.job && <p className="text-xs text-muted-foreground truncate w-full">{person.job}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent className="!fixed !top-[0%] !h-auto !max-h-[90vh]">
-          <div className="flex flex-col h-full overflow-y-auto">
-            <DrawerHeader className="border-b px-6 py-4 bg-muted/30">
-              <div className="flex justify-between items-start">
-                <div>
-                  <DrawerTitle className="text-2xl font-bold">{selectedPerson?.name}</DrawerTitle>
-                  <DrawerDescription>{selectedPerson?.known_for_department}</DrawerDescription>
-                </div>
-                <Button variant="ghost" size="icon" onClick={closeDrawer}>
-                  <X className="w-5 h-5" />
+              <CardFooter className="flex flex-wrap gap-3 mt-4">
+                <Button className="gap-2">
+                  <Play className="w-5 h-5" />
+                  Watch Trailer
                 </Button>
-              </div>
-            </DrawerHeader>
+                <Button variant="outline" className="gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  Add to Watchlist
+                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <circle cx="12" cy="12" r="1"></circle>
+                          <circle cx="12" cy="5" r="1"></circle>
+                          <circle cx="12" cy="19" r="1"></circle>
+                        </svg>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>More actions</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+        {/* Collection Section */}
+        {collection && collection.parts.length > 0 && (
+          <div className="mt-12">
+            <div className="flex items-center gap-3 mb-6">
+              <Film className="w-6 h-6 text-primary" />
+              <h2 className="text-2xl font-bold">The {collection.name} Collection</h2>
+            </div>
 
-            <div className="p-6 space-y-10">
-              {isPersonLoading ? (
-                <LoadingSkeleton />
-              ) : selectedPerson ? (
-                <>
-                  {/* Profile & Bio Section */}
-                  <div className="flex flex-col md:flex-row gap-8">
-                    <div className="flex flex-col items-center">
-                      {selectedPerson.profile_path ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {collection.parts.map((item) => (
+                <Link to={`/movie/${item.id}`} key={item.id} className="group transition-all hover:scale-105">
+                  <Card className="border-0 shadow-none py-0">
+                    <div className="relative">
+                      {item.poster_path ? (
                         <img
-                          src={`${IMAGE_BASE_URL}${selectedPerson.profile_path}`}
-                          alt={selectedPerson.name}
-                          className="rounded-full w-40 h-40 object-cover mb-4 shadow-lg"
+                          src={`${IMAGE_BASE_URL}${item.poster_path}`}
+                          alt={item.title}
+                          className="rounded-lg w-full aspect-[2/3] object-cover"
                         />
                       ) : (
-                        <div className="rounded-full w-40 h-40 bg-gray-200 flex items-center justify-center mb-4">
-                          <User className="w-20 h-20 text-gray-400" />
+                        <div className="bg-muted rounded-lg w-full aspect-[2/3] flex items-center justify-center">
+                          <Film className="w-8 h-8 text-muted-foreground" />
                         </div>
                       )}
-                      <div className="text-center text-sm text-muted-foreground">
-                        {selectedPerson.birthday && (
-                          <div>
-                            <p className="font-medium">Born</p>
-                            <p>
-                              {formatDate(selectedPerson.birthday)}
-                              {selectedPerson.place_of_birth && ` • ${selectedPerson.place_of_birth}`}
-                            </p>
+                      {item.id === movie.id && (
+                        <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 rounded-md text-xs font-medium">
+                          Current
+                        </div>
+                      )}
+                    </div>
+                    <CardContent className="p-2">
+                      <h3 className="font-semibold truncate group-hover:text-primary">{item.title}</h3>
+                      <p className="text-xs text-muted-foreground">{item.release_date?.substring(0, 4) || "N/A"}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Cast & Crew Section */}
+        <div className="mt-12">
+          <div className="mb-10">
+            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <User className="w-5 h-5" /> Cast
+            </h3>
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-6 pb-4">
+                {topCast.map((person) => (
+                  <div
+                    key={person.id}
+                    className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
+                    onClick={() => handlePersonClick(person.id)}
+                  >
+                    <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
+                      {person.profile_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w200${person.profile_path}`}
+                          alt={person.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
+                          <User className="w-8 h-8" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium group-hover:text-primary transition-colors">{person.name}</p>
+                      {person.character && (
+                        <p className="text-xs text-muted-foreground truncate w-full">{person.character}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5" /> Crew
+            </h3>
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-6 pb-4">
+                {topCrew.map((person) => (
+                  <div
+                    key={person.id}
+                    className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
+                    onClick={() => handlePersonClick(person.id)}
+                  >
+                    <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
+                      {person.profile_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w200${person.profile_path}`}
+                          alt={person.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
+                          <User className="w-8 h-8" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium group-hover:text-primary transition-colors">{person.name}</p>
+                      {person.job && <p className="text-xs text-muted-foreground truncate w-full">{person.job}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+          <DrawerContent className="!fixed !top-[0%] !h-auto !max-h-[90vh]">
+            <div className="flex flex-col h-full overflow-y-auto">
+              <DrawerHeader className="border-b px-6 py-4 bg-muted/30">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <DrawerTitle className="text-2xl font-bold">{selectedPerson?.name}</DrawerTitle>
+                    <DrawerDescription>{selectedPerson?.known_for_department}</DrawerDescription>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={closeDrawer}>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+              </DrawerHeader>
+
+              <div className="p-6 space-y-10">
+                {isPersonLoading ? (
+                  <LoadingSkeleton />
+                ) : selectedPerson ? (
+                  <>
+                    {/* Profile & Bio Section */}
+                    <div className="flex flex-col md:flex-row gap-8">
+                      <div className="flex flex-col items-center">
+                        {selectedPerson.profile_path ? (
+                          <img
+                            src={`${IMAGE_BASE_URL}${selectedPerson.profile_path}`}
+                            alt={selectedPerson.name}
+                            className="rounded-full w-40 h-40 object-cover mb-4 shadow-lg"
+                          />
+                        ) : (
+                          <div className="rounded-full w-40 h-40 bg-gray-200 flex items-center justify-center mb-4">
+                            <User className="w-20 h-20 text-gray-400" />
                           </div>
+                        )}
+                        <div className="text-center text-sm text-muted-foreground">
+                          {selectedPerson.birthday && (
+                            <div>
+                              <p className="font-medium">Born</p>
+                              <p>
+                                {formatDate(selectedPerson.birthday)}
+                                {selectedPerson.place_of_birth && ` • ${selectedPerson.place_of_birth}`}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold mb-3">Biography</h3>
+                        {selectedPerson.biography ? (
+                          <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                            {selectedPerson.biography.length > 800
+                              ? selectedPerson.biography.slice(0, 800) + "…"
+                              : selectedPerson.biography}
+                          </p>
+                        ) : (
+                          <p className="italic text-muted-foreground">No biography available.</p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold mb-3">Biography</h3>
-                      {selectedPerson.biography ? (
-                        <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                          {selectedPerson.biography.length > 800
-                            ? selectedPerson.biography.slice(0, 800) + "…"
-                            : selectedPerson.biography}
-                        </p>
-                      ) : (
-                        <p className="italic text-muted-foreground">No biography available.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Filmography Section */}
-                  {personMovies.length > 0 && (
-                    <div>
-                      <h3 className="text-2xl font-bold mb-4">🎬 Filmography</h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-                        {personMovies.map((movie) => (
-                          <Link to={`/movie/${movie.id}`} key={movie.id} className="group" onClick={closeDrawer}>
-                            <Card className="border hover:shadow transition-shadow py-0">
-                              {movie.poster_path ? (
-                                <img
-                                  src={`${IMAGE_BASE_URL}${movie.poster_path}`}
-                                  alt={movie.title}
-                                  className="rounded-t w-full h-52 object-cover"
-                                />
-                              ) : (
-                                <div className="bg-muted w-full h-52 flex items-center justify-center">
-                                  <Film className="w-8 h-8 text-muted-foreground" />
-                                </div>
-                              )}
-                              <CardContent className="p-2">
-                                <h4 className="text-sm font-semibold truncate">{movie.title}</h4>
-                                <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                                  <span>{movie.release_date?.slice(0, 4) || "N/A"}</span>
-                                  <span className="flex items-center gap-1">
-                                    <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                                    {movie.vote_average.toFixed(1)}
-                                  </span>
-                                </div>
-                                {movie.character && (
-                                  <p className="text-xs text-muted-foreground truncate mt-1">as {movie.character}</p>
+                    {/* Filmography Section */}
+                    {personMovies.length > 0 && (
+                      <div>
+                        <h3 className="text-2xl font-bold mb-4">🎬 Filmography</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                          {personMovies.map((movie) => (
+                            <Link to={`/movie/${movie.id}`} key={movie.id} className="group" onClick={closeDrawer}>
+                              <Card className="border hover:shadow transition-shadow py-0">
+                                {movie.poster_path ? (
+                                  <img
+                                    src={`${IMAGE_BASE_URL}${movie.poster_path}`}
+                                    alt={movie.title}
+                                    className="rounded-t w-full h-52 object-cover"
+                                  />
+                                ) : (
+                                  <div className="bg-muted w-full h-52 flex items-center justify-center">
+                                    <Film className="w-8 h-8 text-muted-foreground" />
+                                  </div>
                                 )}
-                              </CardContent>
-                            </Card>
-                          </Link>
-                        ))}
+                                <CardContent className="p-2">
+                                  <h4 className="text-sm font-semibold truncate">{movie.title}</h4>
+                                  <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                                    <span>{movie.release_date?.slice(0, 4) || "N/A"}</span>
+                                    <span className="flex items-center gap-1">
+                                      <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                                      {movie.vote_average.toFixed(1)}
+                                    </span>
+                                  </div>
+                                  {movie.character && (
+                                    <p className="text-xs text-muted-foreground truncate mt-1">as {movie.character}</p>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            </Link>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center mt-10">
-                  <Info className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-xl font-semibold">Person details not available</h3>
-                  <Button variant="outline" className="mt-4" onClick={closeDrawer}>
-                    Close
-                  </Button>
-                </div>
-              )}
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center mt-10">
+                    <Info className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-xl font-semibold">Person details not available</h3>
+                    <Button variant="outline" className="mt-4" onClick={closeDrawer}>
+                      Close
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
+          </DrawerContent>
+        </Drawer>
+      </div>
     </div>
   );
 }
