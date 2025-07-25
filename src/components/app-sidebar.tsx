@@ -1,26 +1,22 @@
-import * as React from "react"
+import * as React from "react";
 import {
-  IconCamera,
   IconChartBar,
   IconDashboard,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
   IconFolder,
-  IconHelp,
   IconInnerShadowTop,
   IconListDetails,
-  IconReport,
-  IconSearch,
-  IconSettings,
   IconUsers,
-} from "@tabler/icons-react"
+  IconChevronDown,
+  IconMovie,
+  IconDeviceTvOld,
+} from "@tabler/icons-react";
+import { useLocation, Link } from "react-router-dom";
+import { useState } from "react";
 
-import { NavDocuments } from "@/components/nav-documents"
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavDocuments } from "@/components/nav-documents";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -29,13 +25,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { ThemeToggle } from "./theme-toggle"
+} from "@/components/ui/sidebar";
+import { ThemeToggle } from "./theme-toggle";
+import { cn } from "@/lib/utils";
+import { getCurrentUser } from "../utils/user";
+
+const user = await getCurrentUser();
 
 const data = {
   user: {
-    name: "shadcn",
-    email: localStorage.getItem("user_email") || "m@.com",
+    name: user?.user_metadata?.displayName || "Guest",
+    email: user?.email || "",
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
@@ -46,13 +46,19 @@ const data = {
     },
     {
       title: "Activity",
-      url: "/activity",
       icon: IconListDetails,
+      children: [
+        { title: "Movies", url: "/activity/movies", icon: IconMovie },
+        { title: "TV Series", url: "/activity/tv", icon: IconDeviceTvOld },
+      ],
     },
     {
       title: "Explore",
-      url: "/explore",
       icon: IconChartBar,
+      children: [
+        { title: "Movies", url: "/explore/movies", icon: IconMovie },
+        { title: "TV Series", url: "/explore/tv", icon: IconDeviceTvOld },
+      ],
     },
     {
       title: "Search",
@@ -65,114 +71,110 @@ const data = {
       icon: IconUsers,
     },
   ],
-
-  // navClouds: [
-  //   {
-  //     title: "Capture",
-  //     icon: IconCamera,
-  //     isActive: true,
-  //     url: "#",
-  //     items: [
-  //       {
-  //         title: "Active Proposals",
-  //         url: "#",
-  //       },
-  //       {
-  //         title: "Archived",
-  //         url: "#",
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     title: "Proposal",
-  //     icon: IconFileDescription,
-  //     url: "#",
-  //     items: [
-  //       {
-  //         title: "Active Proposals",
-  //         url: "#",
-  //       },
-  //       {
-  //         title: "Archived",
-  //         url: "#",
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     title: "Prompts",
-  //     icon: IconFileAi,
-  //     url: "#",
-  //     items: [
-  //       {
-  //         title: "Active Proposals",
-  //         url: "#",
-  //       },
-  //       {
-  //         title: "Archived",
-  //         url: "#",
-  //       },
-  //     ],
-  //   },
-  // ],
-  // navSecondary: [
-  //   {
-  //     title: "Settings",
-  //     url: "#",
-  //     icon: IconSettings,
-  //   },
-  //   {
-  //     title: "Get Help",
-  //     url: "#",
-  //     icon: IconHelp,
-  //   },
-  //   {
-  //     title: "Search",
-  //     url: "#",
-  //     icon: IconSearch,
-  //   },
-  // ],
-  // // documents: [
-  //   {
-  //     name: "Data Library",
-  //     url: "#",
-  //     icon: IconDatabase,
-  //   },
-  //   {
-  //     name: "Reports",
-  //     url: "#",
-  //     icon: IconReport,
-  //   },
-  //   {
-  //     name: "Word Assistant",
-  //     url: "#",
-  //     icon: IconFileWord,
-  //   },
-  // ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const location = useLocation();
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
+    Activity: true,
+    Explore: true,
+  });
+
+  const toggleItem = (title: string) => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      [title]: !prev[title],
+    }));
+  };
+
+  const isActive = (url: string) => location.pathname === url;
+  const isChildActive = (children: { url: string }[]) => children.some((child) => isActive(child.url));
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <a href="#">
+              <Link to="/" className="flex items-center gap-2">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">MoviesFind</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <SidebarMenu>
+          {data.navMain.map((item) => {
+            const hasChildren = item.children && item.children.length > 0;
+            const isItemActive = item.url ? isActive(item.url) : false;
+            const areChildrenActive = hasChildren ? isChildActive(item.children!) : false;
+            const isActiveState = isItemActive || areChildrenActive;
+
+            return (
+              <React.Fragment key={item.title}>
+                <SidebarMenuItem>
+                  {hasChildren ? (
+                    <SidebarMenuButton
+                      onClick={() => toggleItem(item.title)}
+                      className={cn(
+                        "flex justify-between items-center w-full",
+                        isActiveState && "bg-accent font-medium"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <item.icon className="size-5" />
+                        <span>{item.title}</span>
+                      </div>
+                      <IconChevronDown
+                        className={cn("size-4 transition-transform", expandedItems[item.title] && "rotate-180")}
+                      />
+                    </SidebarMenuButton>
+                  ) : (
+                    <SidebarMenuButton asChild>
+                      <Link
+                        to={item.url!}
+                        className={cn("flex items-center gap-3", isActiveState && "bg-accent font-medium")}
+                      >
+                        <item.icon className="size-5" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
+                </SidebarMenuItem>
+
+                {hasChildren && expandedItems[item.title] && (
+                  <div className="ml-6 pl-2 border-l border-gray-200 dark:border-gray-700">
+                    {item.children!.map((child) => (
+                      <SidebarMenuItem key={child.title}>
+                        <SidebarMenuButton asChild>
+                          <Link
+                            to={child.url}
+                            className={cn(
+                              "flex items-center gap-3 pl-8",
+                              isActive(child.url) && "bg-accent font-medium"
+                            )}
+                          >
+                            <child.icon className="size-5" />
+                            <span>{child.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </SidebarMenu>
+
         <div className="p-2 flex justify-end">
           <ThemeToggle />
         </div>
-        {/* <NavDocuments items={data.documents} /> */}
-        {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
+
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>

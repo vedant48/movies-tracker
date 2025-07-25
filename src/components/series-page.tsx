@@ -10,16 +10,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
-import { MovieCard } from "./movie-card";
 
 // Updated interfaces
-interface Movie {
+interface Series {
   id: number;
-  title: string;
+  name: string;
   overview: string;
   poster_path: string;
   backdrop_path: string;
-  release_date: string;
+  first_air_date: string;
   vote_average: number;
   genres: { id: number; name: string }[];
   runtime: number;
@@ -34,6 +33,16 @@ interface Movie {
     poster_path: string;
     backdrop_path: string;
   };
+  created_by?: { id: number; name: string; profile_path: string }[];
+  production_companies?: { id: number; name: string; logo_path: string }[];
+  seasons?: {
+    id: number;
+    season_number: number;
+    poster_path: string;
+    name: string;
+    overview: string;
+    air_date: string;
+  }[];
 }
 
 interface Credit {
@@ -50,14 +59,21 @@ interface Credits {
   crew: Credit[];
 }
 
+interface Seasons {
+  id: number;
+  season_number: number;
+  name: string;
+  overview: string;
+  air_date: string;
+  poster_path: string;
+}
+
 interface Collection {
   id: number;
   name: string;
   overview: string;
   poster_path: string;
   parts: {
-    overview: string;
-    vote_average: number;
     id: number;
     title: string;
     poster_path: string;
@@ -84,14 +100,28 @@ interface PersonMovieCredit {
   vote_average: number;
 }
 
+interface Episode {
+  id: number;
+  name: string;
+  overview: string;
+  episode_number: number;
+  season_number: number;
+  air_date: string;
+  runtime: number;
+  still_path: string;
+  vote_average: number;
+}
+
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
-export default function MoviePage() {
+export default function SeriesPage() {
   const { id } = useParams<{ id: string }>();
-  const [movie, setMovie] = useState<Movie | null>(null);
-  const [credits, setCredits] = useState<Credits | null>(null);
-  const [collection, setCollection] = useState<Collection | null>(null);
   const [loading, setLoading] = useState(true);
+  const [series, setSeries] = useState<Series | null>(null);
+  const [credits, setCredits] = useState<Credits | null>(null);
+  const [episodesBySeason, setEpisodesBySeason] = useState<Record<number, Episode[]>>({});
+  const [loadingEpisodes, setLoadingEpisodes] = useState(false);
+  const [activeSeason, setActiveSeason] = useState<number>(1);
   const [error, setError] = useState("");
   const [selectedPerson, setSelectedPerson] = useState<PersonDetail | null>(null);
   const [personMovies, setPersonMovies] = useState<PersonMovieCredit[]>([]);
@@ -102,23 +132,18 @@ export default function MoviePage() {
     async function fetchData() {
       try {
         setLoading(true);
-        const [movieData, creditsData] = await Promise.all([
-          proxyGet<Movie>(`/v1/tmdb/3/movie/${id}`),
-          proxyGet<Credits>(`/v1/tmdb/3/movie/${id}/credits`),
+        const [seriesData, creditsData] = await Promise.all([
+          proxyGet<Series>(`/v1/tmdb/3/tv/${id}`),
+          proxyGet<Credits>(`/v1/tmdb/3/tv/${id}/credits`),
         ]);
 
-        setMovie(movieData);
+        setSeries(seriesData);
         setCredits(creditsData);
-
-        if (movieData.belongs_to_collection) {
-          try {
-            const collectionData = await proxyGet<Collection>(
-              `/v1/tmdb/3/collection/${movieData.belongs_to_collection.id}`
-            );
-            setCollection(collectionData);
-          } catch (err) {
-            console.error("Error loading collection:", err);
-          }
+        const validSeasons = seriesData.seasons.filter((s: Seasons) => s.season_number > 0);
+        if (validSeasons.length > 0) {
+          const firstValidSeason = validSeasons[0];
+          setActiveSeason(firstValidSeason.season_number);
+          fetchSeasonEpisodes(firstValidSeason.season_number);
         }
       } catch (err) {
         console.error("Error loading movie:", err);
@@ -130,6 +155,23 @@ export default function MoviePage() {
 
     fetchData();
   }, [id]);
+
+  const fetchSeasonEpisodes = async (seasonNumber: number) => {
+    if (episodesBySeason[seasonNumber]) return;
+
+    setLoadingEpisodes(true);
+    try {
+      const data = await proxyGet<{ episodes: Episode[] }>(`/v1/tmdb/3/tv/${id}/season/${seasonNumber}`);
+      setEpisodesBySeason((prev) => ({
+        ...prev,
+        [seasonNumber]: data.episodes,
+      }));
+    } catch (err) {
+      console.error(`Error loading episodes for season ${seasonNumber}:`, err);
+    } finally {
+      setLoadingEpisodes(false);
+    }
+  };
 
   const formatCurrency = (value: number | undefined): string => {
     if (!value) return "N/A";
@@ -191,6 +233,11 @@ export default function MoviePage() {
     setPersonMovies([]);
   };
 
+  const handleSeasonClick = (seasonNumber: number) => {
+    setActiveSeason(seasonNumber);
+    fetchSeasonEpisodes(seasonNumber);
+  };
+
   if (loading) {
     return (
       <div className="p-4 max-w-6xl mx-auto">
@@ -244,12 +291,12 @@ export default function MoviePage() {
     );
   }
 
-  if (error || !movie) {
+  if (error || !series) {
     return (
       <div className="p-4 max-w-4xl mx-auto h-[60vh] flex flex-col items-center justify-center text-center">
         <Info className="w-12 h-12 text-red-500 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">{error || "Movie not found"}</h2>
-        <p className="text-muted-foreground mb-6">We couldn't find the movie you're looking for.</p>
+        <h2 className="text-2xl font-bold mb-2">{error || "Series not found"}</h2>
+        <p className="text-muted-foreground mb-6">We couldn't find the series you're looking for.</p>
         <Button variant="outline" onClick={() => window.history.back()}>
           Go Back
         </Button>
@@ -275,10 +322,10 @@ export default function MoviePage() {
           {/* Poster */}
           <div className="w-full md:w-1/3">
             <Card className="overflow-hidden border-0 shadow-lg py-0">
-              {movie.poster_path ? (
+              {series.poster_path ? (
                 <img
-                  src={`${IMAGE_BASE_URL}${movie.poster_path}`}
-                  alt={movie.title}
+                  src={`${IMAGE_BASE_URL}${series.poster_path}`}
+                  alt={series.name}
                   className="w-full object-cover rounded-lg"
                 />
               ) : (
@@ -293,33 +340,33 @@ export default function MoviePage() {
           <div className="w-full md:w-2/3">
             <Card className="border-0 shadow-none">
               <CardHeader>
-                <CardTitle className="text-3xl md:text-4xl font-bold tracking-tight">{movie.title}</CardTitle>
+                <CardTitle className="text-3xl md:text-4xl font-bold tracking-tight">{series.name}</CardTitle>
 
-                {movie.tagline && (
-                  <CardDescription className="text-lg italic text-muted-foreground">"{movie.tagline}"</CardDescription>
+                {series.tagline && (
+                  <CardDescription className="text-lg italic text-muted-foreground">"{series.tagline}"</CardDescription>
                 )}
 
                 <div className="flex items-center gap-3 mt-2">
                   <div className="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full">
                     <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                    <span className="font-semibold">{movie.vote_average.toFixed(1)}</span>
+                    <span className="font-semibold">{series.vote_average.toFixed(1)}</span>
                   </div>
 
                   <div className="flex items-center gap-1 text-sm">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>{new Date(movie.release_date).getFullYear()}</span>
+                    <span>{new Date(series.first_air_date).getFullYear()}</span>
                   </div>
 
                   <div className="flex items-center gap-1 text-sm">
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span>{formatRuntime(movie.runtime)}</span>
+                    <span>{formatRuntime(series.runtime)}</span>
                   </div>
                 </div>
               </CardHeader>
 
               <CardContent>
                 <div className="flex flex-wrap gap-2 mb-6">
-                  {movie.genres.map((genre) => (
+                  {series.genres.map((genre) => (
                     <Badge key={genre.id} variant="secondary" className="px-3 py-1 text-sm font-medium">
                       {genre.name}
                     </Badge>
@@ -328,7 +375,7 @@ export default function MoviePage() {
 
                 <h3 className="text-lg font-semibold mb-3">Overview</h3>
                 <p className="text-muted-foreground mb-6 leading-relaxed">
-                  {movie.overview || "No overview available."}
+                  {series.overview || "No overview available."}
                 </p>
 
                 <Separator className="my-6" />
@@ -340,7 +387,7 @@ export default function MoviePage() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Status</p>
-                      <p className="font-medium">{movie.status}</p>
+                      <p className="font-medium">{series.status}</p>
                     </div>
                   </div>
 
@@ -363,7 +410,7 @@ export default function MoviePage() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Budget</p>
-                      <p className="font-medium">{formatCurrency(movie.budget)}</p>
+                      <p className="font-medium">{formatCurrency(series.budget)}</p>
                     </div>
                   </div>
 
@@ -386,11 +433,11 @@ export default function MoviePage() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Revenue</p>
-                      <p className="font-medium">{formatCurrency(movie.revenue)}</p>
+                      <p className="font-medium">{formatCurrency(series.revenue)}</p>
                     </div>
                   </div>
 
-                  {movie.original_language && (
+                  {series.original_language && (
                     <div className="flex items-center gap-3">
                       <div className="bg-muted p-2 rounded-full">
                         <svg
@@ -411,7 +458,7 @@ export default function MoviePage() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Language</p>
-                        <p className="font-medium">{movie.original_language.toUpperCase()}</p>
+                        <p className="font-medium">{series.original_language.toUpperCase()}</p>
                       </div>
                     </div>
                   )}
@@ -469,30 +516,97 @@ export default function MoviePage() {
             </Card>
           </div>
         </div>
-        {/* Collection Section */}
-        {collection && collection.parts.length > 0 && (
-          <div className="mt-12">
-            <div className="flex items-center gap-3 mb-6">
-              <Film className="w-6 h-6 text-primary" />
-              <h2 className="text-2xl font-bold">The {collection.name} Collection</h2>
-            </div>
+        {/* Seasons Section */}
+        {series.seasons && series.seasons.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-2xl font-semibold mb-4">Seasons</h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-              {collection.parts.map((item) => (
-                <MovieCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title || "Untitled"}
-                  poster_path={item.poster_path || ""}
-                  release_date={item.release_date || "N/A"}
-                  vote_average={item.vote_average || 0}
-                  overview={item.overview || "No description available."}
-                  highlight={item.id === movie.id} // optional custom prop for 'Current' badge
-                />
+            {/* Season Tabs */}
+            <div className="flex overflow-x-auto pb-2 mb-6 scrollbar-hide">
+              {series.seasons.map((season) => (
+                <Button
+                  key={season.id}
+                  variant={activeSeason === season.season_number ? "default" : "outline"}
+                  className={`mr-2 rounded-full px-4 py-2 transition-all ${
+                    activeSeason === season.season_number ? "font-bold" : ""
+                  }`}
+                  onClick={() => handleSeasonClick(season.season_number)}
+                >
+                  {season.name}
+                </Button>
               ))}
             </div>
+
+            {/* Episodes List */}
+            {loadingEpisodes ? (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center p-4 border rounded-lg">
+                    <Skeleton className="w-16 h-16 rounded mr-4" />
+                    <div className="flex-1">
+                      <Skeleton className="h-5 w-3/4 mb-2" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : episodesBySeason[activeSeason] ? (
+              <div className="space-y-4">
+                {episodesBySeason[activeSeason].map((episode) => (
+                  <Card key={episode.id} className="hover:shadow-md transition-shadow py-0">
+                    <CardContent className="p-4 flex items-start">
+                      {episode.still_path ? (
+                        <img
+                          src={`${IMAGE_BASE_URL}${episode.still_path}`}
+                          alt={episode.name}
+                          className="w-24 h-24 rounded-lg object-cover mr-4"
+                        />
+                      ) : (
+                        <div className="bg-muted border w-24 h-24 rounded-lg flex items-center justify-center mr-4">
+                          <Play className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                      )}
+
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-lg font-semibold">
+                            Episode {episode.episode_number}: {episode.name}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            {episode.runtime > 0 && (
+                              <Badge variant="outline" className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatRuntime(episode.runtime)}
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {formatDate(episode.air_date)}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <p className="text-muted-foreground mt-2">
+                          {episode.overview
+                            ? episode.overview.length > 180
+                              ? episode.overview.slice(0, 180) + "…"
+                              : episode.overview
+                            : "No description available."}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Info className="w-12 h-12 mx-auto mb-2" />
+                <p>No episodes found for this season</p>
+              </div>
+            )}
           </div>
         )}
+
         {/* Cast & Crew Section */}
         <div className="mt-12">
           <div className="mb-10">
@@ -532,7 +646,7 @@ export default function MoviePage() {
             </div>
           </div>
 
-          <div>
+          <div className="mb-10">
             <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <Users className="w-5 h-5" /> Crew
             </h3>
@@ -566,6 +680,42 @@ export default function MoviePage() {
               </div>
             </div>
           </div>
+
+          {series.created_by && series.created_by.length > 0 && (
+            <div className="mb-10">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <User className="w-5 h-5" /> Created By
+              </h3>
+              <div className="overflow-x-auto scrollbar-hide">
+                <div className="flex gap-6 pb-4">
+                  {series.created_by.map((creator) => (
+                    <div
+                      key={creator.id}
+                      className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
+                      onClick={() => handlePersonClick(creator.id)}
+                    >
+                      <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
+                        {creator.profile_path ? (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w200${creator.profile_path}`}
+                            alt={creator.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
+                            <User className="w-8 h-8" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center">
+                        <p className="font-medium group-hover:text-primary transition-colors">{creator.name}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
           <DrawerContent className="!fixed !top-[0%] !h-auto !max-h-[90vh]">
