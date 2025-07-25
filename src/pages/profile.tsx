@@ -4,28 +4,21 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
-type Stats = {
-  moviesWant: number;
-  moviesWatched: number;
-  seriesWant: number;
-  seriesWatched: number;
-};
-
 export default function ProfilePage() {
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [displayName, setDisplayName] = useState("");
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [bio, setBio] = useState("");
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [user, setUser] = useState<{
     id: string;
     email: string;
     created_at: string;
-    user_metadata?: { displayName?: string };
+    user_metadata?: { username?: string; full_name?: string; avatar_url?: string; bio?: string };
     [key: string]: any;
   } | null>(null);
 
@@ -45,46 +38,38 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) return;
 
-    setDisplayName((user.user_metadata as any)?.displayName || "");
+    const metadata = user.user_metadata || {};
+    setUsername(metadata.username || "");
+    setFullName(metadata.full_name || "");
+    setAvatarUrl(metadata.avatar_url || "");
+    setBio(metadata.bio || "");
     setCreatedAt(user.created_at);
-
-    // fetch counts in parallel
-    async function fetchStats() {
-      async function count(status: "want" | "watched", type: "movie" | "series") {
-        const { count } = await supabase
-          .from("user_media")
-          .select("*", { count: "exact", head: true })
-          .eq("status", status)
-          .eq("media_type", type)
-          .eq("user_id", user!.id || "");
-        return count || 0;
-      }
-
-      const [moviesWant, moviesWatched, seriesWant, seriesWatched] = await Promise.all([
-        count("want", "movie"),
-        count("watched", "movie"),
-        count("want", "series"),
-        count("watched", "series"),
-      ]);
-
-      setStats({ moviesWant, moviesWatched, seriesWant, seriesWatched });
-      setLoading(false);
-    }
-
-    fetchStats();
   }, [user]);
 
-  async function handleSaveName() {
+  async function handleSaveProfile() {
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({
-      data: { displayName },
+
+    const { error: authError } = await supabase.auth.updateUser({
+      data: {
+        displayName: fullName,
+      },
     });
+
+    const { error: profileError } = await supabase.from("profiles").upsert({
+      id: user.id,
+      full_name: fullName,
+      username,
+      avatar_url: avatarUrl,
+      bio,
+    });
+
     setSaving(false);
-    if (error) {
-      toast.error("Could not update name");
+
+    if (authError || profileError) {
+      toast.error("Could not update profile.");
     } else {
-      toast.success("Profile updated");
+      toast.success("Profile updated.");
     }
   }
 
@@ -93,9 +78,9 @@ export default function ProfilePage() {
   }
 
   if (!user) return null;
+
   return (
     <div className="flex flex-1 flex-col gap-6 py-6">
-      {/* Basic details */}
       <Card className="p-6 space-y-4">
         <h2 className="text-xl font-semibold">Account</h2>
         <div className="space-y-1">
@@ -107,17 +92,50 @@ export default function ProfilePage() {
           <div>{new Date(createdAt || "").toLocaleDateString()}</div>
         </div>
 
-        {/* Display name form */}
-        <div className="space-y-2 pt-4">
-          <Label htmlFor="displayName">Display name</Label>
-          <Input
-            id="displayName"
-            value={displayName}
-            onChange={(e: { target: { value: SetStateAction<string> } }) => setDisplayName(e.target.value)}
-            placeholder="Your cool nickname"
-          />
-          <Button onClick={handleSaveName} disabled={saving} className="w-fit">
-            {saving ? "Saving…" : "Save"}
+        {/* Profile update form */}
+        <div className="space-y-4 pt-4">
+          <div>
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              value={username}
+              onChange={(e: { target: { value: SetStateAction<string> } }) => setUsername(e.target.value)}
+              placeholder="your_username"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input
+              id="fullName"
+              value={fullName}
+              onChange={(e: { target: { value: SetStateAction<string> } }) => setFullName(e.target.value)}
+              placeholder="Your full name"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="avatarUrl">Avatar URL</Label>
+            <Input
+              id="avatarUrl"
+              value={avatarUrl}
+              onChange={(e: { target: { value: SetStateAction<string> } }) => setAvatarUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              value={bio}
+              onChange={(e: { target: { value: SetStateAction<string> } }) => setBio(e.target.value)}
+              placeholder="Tell us something about yourself"
+            />
+          </div>
+
+          <Button onClick={handleSaveProfile} disabled={saving} className="w-fit">
+            {saving ? "Saving…" : "Save Profile"}
           </Button>
         </div>
 
@@ -125,34 +143,6 @@ export default function ProfilePage() {
           Log out
         </Button>
       </Card>
-
-      {/* Stats */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Your Lists</h2>
-        {loading || !stats ? (
-          <div className="grid grid-cols-2 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            <Stat label="Movies – Want" count={stats.moviesWant} />
-            <Stat label="Movies – Watched" count={stats.moviesWatched} />
-            <Stat label="Series – Want" count={stats.seriesWant} />
-            <Stat label="Series – Watched" count={stats.seriesWatched} />
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
-
-function Stat({ label, count }: { label: string; count: number }) {
-  return (
-    <div className="flex items-center justify-between rounded-lg border p-3">
-      <span>{label}</span>
-      <Badge variant="secondary">{count}</Badge>
     </div>
   );
 }
