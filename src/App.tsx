@@ -7,7 +7,6 @@ import SupraAuthPage from "./pages/supra-auth";
 import { AppSidebar } from "./components/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/site-header";
-import TrackerPage from "./pages/tracker";
 import ExploreMovie from "./pages/explore-movie";
 import ExploreTv from "./pages/explore-tv";
 import SearchPage from "./pages/search";
@@ -21,6 +20,8 @@ import ProfilePage from "./pages/profile";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoaderCircle } from "lucide-react";
+import MovieTrackerPage from "./pages/tracker";
+import UsersPage from "./pages/users";
 
 /* ───── Loading Component ───── */
 const FullScreenLoader = () => {
@@ -56,7 +57,7 @@ function Activity() {
       <div className="px-4 lg:px-6">
         <h1 className="text-2xl font-bold">Activity</h1>
         <p className="text-muted-foreground">Track your movie and series activity here.</p>
-        <TrackerPage />
+        <MovieTrackerPage />
       </div>
     </div>
   );
@@ -164,6 +165,8 @@ export default function App() {
           {/* Details */}
           <Route path="/movie/:id" element={<MoviePage />} />
           <Route path="/series/:id" element={<SeriesPage />} />
+
+          <Route path="/users" element={<UsersPage />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,18 +1,30 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type SetStateAction } from "react";
 import { proxyGet } from "@/utils/tmdbProxy";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Star, Clock, Calendar, Play, Info, Popcorn, User, Users, Film, X } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Star, Clock, Calendar, Info, Popcorn, User, Users, Film, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { MovieCard } from "./movie-card";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
+import { Bookmark, CheckCircle, Edit } from "lucide-react";
 
-// Updated interfaces
 interface Movie {
   id: number;
   title: string;
@@ -97,6 +109,14 @@ export default function MoviePage() {
   const [personMovies, setPersonMovies] = useState<PersonMovieCredit[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isPersonLoading, setIsPersonLoading] = useState(false);
+  const [movieStatus, setMovieStatus] = useState<"want" | "watched" | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState<"want" | "watched" | "delete" | null>(null);
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [userReview, setUserReview] = useState("");
+  const [showWatchedModal, setShowWatchedModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [tempRating, setTempRating] = useState<number | null>(null);
+  const [tempReview, setTempReview] = useState("");
 
   useEffect(() => {
     async function fetchData() {
@@ -189,6 +209,104 @@ export default function MoviePage() {
     setIsDrawerOpen(false);
     setSelectedPerson(null);
     setPersonMovies([]);
+  };
+
+  useEffect(() => {
+    const fetchMovieStatus = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData?.session?.user;
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("user_movies")
+        .select("status, rating, review")
+        .eq("user_id", user.id)
+        .eq("movie_id", movie?.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Fetch error:", error.message);
+        return;
+      }
+
+      if (data?.status === "want" || data?.status === "watched") {
+        setMovieStatus(data.status);
+        setUserRating(data.rating ?? null);
+        setUserReview(data.review ?? "");
+      } else {
+        setMovieStatus(null);
+      }
+    };
+
+    if (movie?.id) fetchMovieStatus();
+  }, [movie?.id]);
+
+  // Add or update movie
+  const handleAddMovie = async (status: "want" | "watched", rating?: number | null, review?: string) => {
+    try {
+      setLoadingStatus(status);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData?.session?.user;
+      if (!user) {
+        toast.error("You must be logged in.");
+        return;
+      }
+
+      const payload: any = {
+        user_id: user.id,
+        movie_id: movie?.id,
+        title: movie?.title,
+        poster_path: movie?.poster_path,
+        release_date: movie?.release_date,
+        runtime: movie?.runtime,
+        status,
+        watched_at: status === "watched" ? new Date().toISOString() : null,
+      };
+
+      if (status === "watched") {
+        payload.rating = rating ?? tempRating;
+        payload.review = review ?? tempReview;
+      }
+
+      const { error } = await supabase.from("user_movies").upsert(payload, { onConflict: "user_id, movie_id" });
+
+      if (error) throw error;
+
+      toast.success(`Movie added to ${status === "want" ? "Want" : "Watched"} list`);
+      setMovieStatus(status);
+    } catch (err: any) {
+      console.error("Save error:", err);
+      toast.error(err.message || "Error saving movie.");
+    } finally {
+      setLoadingStatus(null);
+    }
+  };
+
+  // Delete movie from user_movies
+  const handleDeleteMovie = async () => {
+    try {
+      setLoadingStatus("delete");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData?.session?.user;
+      if (!user) {
+        toast.error("You must be logged in.");
+        return;
+      }
+
+      const { error } = await supabase.from("user_movies").delete().eq("user_id", user.id).eq("movie_id", movie?.id);
+
+      if (error) throw error;
+
+      toast.success("Movie removed from your list.");
+      setMovieStatus(null);
+      setUserRating(null);
+      setUserReview("");
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      toast.error(err.message || "Error removing movie.");
+    } finally {
+      setLoadingStatus(null);
+    }
   };
 
   if (loading) {
@@ -417,55 +535,219 @@ export default function MoviePage() {
                   )}
                 </div>
               </CardContent>
+              <CardFooter className="flex flex-col gap-3 mt-4">
+                <div className="flex flex-col gap-4 w-full">
+                  {movieStatus === "want" ? (
+                    <div className="flex flex-col items-center gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                      <div className="flex items-center gap-2 text-blue-700">
+                        <Bookmark className="w-5 h-5" />
+                        <span className="font-medium">This movie is in your Want List</span>
+                      </div>
+                      <div className="flex gap-3">
+                        <Button onClick={handleDeleteMovie} disabled={loadingStatus === "delete"}>
+                          Remove
+                        </Button>
+                        <Button onClick={() => setShowWatchedModal(true)} disabled={loadingStatus === "watched"}>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          {loadingStatus === "watched" ? "Marking..." : "Mark as Watched"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : movieStatus === "watched" ? (
+                    <div className="flex flex-col gap-4 p-4 bg-green-50 rounded-xl border border-green-100">
+                      <div className="flex items-center gap-2 text-green-700">
+                        <CheckCircle className="w-5 h-5" />
+                        <span className="font-medium">You've watched this movie</span>
+                      </div>
 
-              <CardFooter className="flex flex-wrap gap-3 mt-4">
-                <Button className="gap-2">
-                  <Play className="w-5 h-5" />
-                  Watch Trailer
-                </Button>
-                <Button variant="outline" className="gap-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                  </svg>
-                  Add to Watchlist
-                </Button>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                      {(userRating !== null || userReview) && (
+                        <div className="p-3 bg-white rounded-lg border">
+                          {userRating !== null && (
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-5 h-5 ${
+                                      i < Math.floor(userRating / 2)
+                                        ? "fill-yellow-500 text-yellow-500"
+                                        : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="font-medium">{userRating}/10</span>
+                            </div>
+                          )}
+                          {userReview && (
+                            <div className="mt-2">
+                              <p className="text-sm font-medium text-gray-700 mb-1">Your review:</p>
+                              <p className="text-gray-600">"{userReview}"</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex gap-3">
+                        <Button onClick={handleDeleteMovie} disabled={loadingStatus === "delete"}>
+                          Remove
+                        </Button>
+                        <Button variant="secondary" onClick={() => setShowEditModal(true)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Review
+                        </Button>
+                        <Button onClick={() => handleAddMovie("want")} disabled={loadingStatus === "want"}>
+                          <Bookmark className="w-4 h-4 mr-2" />
+                          Move to Want List
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          variant="outline"
+                          className="flex-1 py-5"
+                          onClick={() => handleAddMovie("want")}
+                          disabled={loadingStatus === "want"}
                         >
-                          <circle cx="12" cy="12" r="1"></circle>
-                          <circle cx="12" cy="5" r="1"></circle>
-                          <circle cx="12" cy="19" r="1"></circle>
-                        </svg>
+                          <Bookmark className="w-4 h-4 mr-2" />
+                          {loadingStatus === "want" ? "Adding..." : "Want to Watch"}
+                        </Button>
+                        <Button
+                          className="flex-1 py-5"
+                          onClick={() => setShowWatchedModal(true)}
+                          disabled={loadingStatus === "watched"}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          {loadingStatus === "watched" ? "Marking..." : "Watched"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Watched Modal */}
+                <Dialog open={showWatchedModal} onOpenChange={setShowWatchedModal}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        Mark as Watched
+                      </DialogTitle>
+                      <DialogDescription>Share your thoughts about this movie</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                      <div>
+                        <Label htmlFor="rating">Your Rating</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            id="rating"
+                            min={0}
+                            max={10}
+                            step={1}
+                            value={[tempRating || 0]}
+                            onValueChange={(val: SetStateAction<number | null>[]) => setTempRating(val[0])}
+                          />
+                          <span className="w-12 text-center font-medium">{tempRating || 0}/10</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="review">Your Review</Label>
+                        <Textarea
+                          id="review"
+                          value={tempReview}
+                          onChange={(e: { target: { value: SetStateAction<string> } }) => setTempReview(e.target.value)}
+                          placeholder="What did you think of this movie?"
+                          className="mt-2 min-h-[100px]"
+                        />
+                      </div>
+                    </div>
+
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowWatchedModal(false)}>
+                        Cancel
                       </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>More actions</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                      <Button
+                        onClick={() => {
+                          handleAddMovie("watched", tempRating, tempReview);
+                          setShowWatchedModal(false);
+                        }}
+                        disabled={loadingStatus === "watched"}
+                      >
+                        {loadingStatus === "watched" ? "Saving..." : "Save & Mark as Watched"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Edit Modal */}
+                <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl flex items-center gap-2">
+                        <Edit className="w-5 h-5 text-blue-600" />
+                        Edit Your Review
+                      </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                      <div>
+                        <Label htmlFor="edit-rating">Your Rating</Label>
+                        <div className="flex items-center gap-3 mt-2">
+                          <Slider
+                            id="edit-rating"
+                            min={0}
+                            max={10}
+                            step={1}
+                            value={[tempRating || 0]}
+                            onValueChange={(val: SetStateAction<number | null>[]) => setTempRating(val[0])}
+                          />
+                          <span className="w-12 text-center font-medium">{tempRating || 0}/10</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-review">Your Review</Label>
+                        <Textarea
+                          id="edit-review"
+                          value={tempReview}
+                          onChange={(e: { target: { value: SetStateAction<string> } }) => setTempReview(e.target.value)}
+                          placeholder="Update your thoughts..."
+                          className="mt-2 min-h-[100px]"
+                        />
+                      </div>
+                    </div>
+
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowEditModal(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          handleAddMovie("watched", tempRating, tempReview);
+                          setShowEditModal(false);
+                        }}
+                        disabled={loadingStatus === "watched"}
+                      >
+                        {loadingStatus === "watched" ? "Updating..." : "Update Review"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </CardFooter>
+              {movieStatus === "watched" && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-2">Your Rating & Review</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    <span className="font-medium">{userRating ? `${userRating}/10` : "No rating"}</span>
+                  </div>
+                  <p className="text-muted-foreground">{userReview || "No review written."}</p>
+                </div>
+              )}
             </Card>
           </div>
         </div>

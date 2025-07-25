@@ -70,6 +70,11 @@ const data = {
       url: "/profile",
       icon: IconUsers,
     },
+    {
+      title: "Users",
+      url: "/users",
+      icon: IconUsers,
+    },
   ],
 };
 

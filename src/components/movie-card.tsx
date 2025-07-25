@@ -8,7 +8,7 @@ interface MovieCardProps {
   title: string;
   poster_path: string;
   release_date: string;
-  vote_average: number;
+  vote_average?: number;
   overview?: string;
   highlight?: boolean;
 }
@@ -37,12 +37,14 @@ export function MovieCard({ id, title, poster_path, release_date, vote_average, 
             )}
 
             {/* Rating Badge */}
-            <div className="absolute top-2 right-2">
-              <Badge variant="secondary">
-                <Star className="w-4 h-4 fill-white" />
-                {vote_average.toFixed(1)}
-              </Badge>
-            </div>
+            {vote_average && (
+              <div className="absolute top-2 right-2">
+                <Badge variant="secondary">
+                  <Star className="w-4 h-4 fill-white" />
+                  {vote_average?.toFixed(1)}
+                </Badge>
+              </div>
+            )}
 
             {/* Highlight Border */}
             {highlight && <div className="absolute inset-0 border-2 border-blue-500 rounded-lg pointer-events-none" />}

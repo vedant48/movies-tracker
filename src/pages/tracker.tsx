@@ -1,274 +1,119 @@
 import { useEffect, useState } from "react";
-import { proxyGet } from "../utils/tmdbProxy";
+import { supabase } from "@/lib/supabase";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { MovieCard } from "@/components/movie-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
-// Types
-interface Movie {
+interface UserMovie {
   id: number;
+  movie_id: number;
   title: string;
+  poster_path: string | null;
   release_date: string;
-  poster_path: string;
-  overview: string;
-}
-interface Series {
-  id: number;
-  name: string;
-  first_air_date: string;
-  poster_path: string;
-  overview: string;
+  runtime: number;
+  status: "want" | "watched";
+  rating?: number;
+  review?: string;
 }
 
-const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w300";
-
-export default function TrackerPage() {
-  const [moviesWant, setMoviesWant] = useState<Movie[]>([]);
-  const [moviesWatched, setMoviesWatched] = useState<Movie[]>([]);
-  const [seriesWant, setSeriesWant] = useState<Series[]>([]);
-  const [seriesWatched, setSeriesWatched] = useState<Series[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingSeries, setLoadingSeries] = useState(false);
-  const [error, setError] = useState("");
-  const [errorSeries, setErrorSeries] = useState("");
+export default function MovieTrackerPage() {
+  const [wantList, setWantList] = useState<UserMovie[]>([]);
+  const [watchedList, setWatchedList] = useState<UserMovie[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMovies = async () => {
+    const fetchUserMovies = async () => {
       setLoading(true);
-      setError("");
-      try {
-        const data = await proxyGet<{ results: Movie[] }>("/v1/tmdb/3/movie/popular");
-        setMoviesWant(data.results || []);
-      } catch (e: any) {
-        setError("Failed to load movies.");
-      } finally {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData?.session?.user;
+      if (!user) {
+        toast.error("Please log in to view your tracker.");
         setLoading(false);
+        return;
       }
-    };
-    const fetchSeries = async () => {
-      setLoadingSeries(true);
-      setErrorSeries("");
-      try {
-        const data = await proxyGet<{ results: Series[] }>("/v1/tmdb/3/tv/popular");
-        setSeriesWant(data.results || []);
-      } catch (e: any) {
-        setErrorSeries("Failed to load series.");
-      } finally {
-        setLoadingSeries(false);
+
+      const { data, error } = await supabase.from("user_movies").select("*").eq("user_id", user.id);
+
+      if (error) {
+        toast.error("Failed to load your movie list.");
+        console.error(error);
+        setLoading(false);
+        return;
       }
+
+      const want = data.filter((item) => item.status === "want");
+      const watched = data.filter((item) => item.status === "watched");
+      setWantList(want);
+      setWatchedList(watched);
+      setLoading(false);
     };
 
-    fetchMovies();
-    fetchSeries();
+    fetchUserMovies();
   }, []);
 
-  // Move functions
-  function markMovieAsWatched(movie: Movie) {
-    setMoviesWant((prev) => prev.filter((m) => m.id !== movie.id));
-    setMoviesWatched((prev) => [...prev, movie]);
-  }
-  function moveMovieToWantList(movie: Movie) {
-    setMoviesWatched((prev) => prev.filter((m) => m.id !== movie.id));
-    setMoviesWant((prev) => [...prev, movie]);
-  }
-  function markSeriesAsWatched(series: Series) {
-    setSeriesWant((prev) => prev.filter((s) => s.id !== series.id));
-    setSeriesWatched((prev) => [...prev, series]);
-  }
-  function moveSeriesToWantList(series: Series) {
-    setSeriesWatched((prev) => prev.filter((s) => s.id !== series.id));
-    setSeriesWant((prev) => [...prev, series]);
-  }
-
-  const email = localStorage.getItem("user_email");
-
   return (
-    <>
-      {/* MAIN FIX: Added overflow-x-hidden to prevent horizontal scroll */}
-      <div className="w-full overflow-x-hidden">
+    <div className="p-4 md:p-6">
+      <h1 className="text-2xl font-bold mb-4">Your Movie Tracker</h1>
 
-        {/* Added max-w-full to prevent overflow */}
-        <Tabs defaultValue="movies" className="my-8 max-w-full">
-          <TabsList className="w-full grid grid-cols-2 mb-4">
-            <TabsTrigger value="movies">Movies</TabsTrigger>
-            <TabsTrigger value="series">Series</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="want">
+        <TabsList className="mb-4">
+          <TabsTrigger value="want">Want to Watch</TabsTrigger>
+          <TabsTrigger value="watched">Watched</TabsTrigger>
+        </TabsList>
 
-          {/* MOVIES TAB */}
-          <TabsContent value="movies">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Want to Watch - added overflow-hidden */}
-              <Card className="p-4 overflow-hidden">
-                <h2 className="font-semibold mb-2">Want to Watch</h2>
-                {loading ? (
-                  <div>Loading movies...</div>
-                ) : error ? (
-                  <div className="text-red-500">{error}</div>
-                ) : moviesWant.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No movies in this list.</p>
-                ) : (
-                  <ul>
-                    {moviesWant.map((movie) => (
-                      <li key={movie.id} className="mb-3 flex items-center gap-3 justify-between">
-                        <div className="flex gap-2 items-center min-w-0">
-                          {movie.poster_path && (
-                            <img
-                              src={`${IMAGE_BASE_URL}${movie.poster_path}`}
-                              alt={movie.title}
-                              className="w-10 h-14 object-cover rounded flex-shrink-0"
-                            />
-                          )}
-                          <div className="flex flex-col min-w-0">
-                            {/* Added truncate and max-width for long titles */}
-                            <span className="font-semibold truncate max-w-[120px] sm:max-w-[180px]">{movie.title}</span>
-                            <span className="text-xs text-gray-400 truncate max-w-[120px] sm:max-w-[180px]">
-                              {movie.release_date}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="whitespace-nowrap flex-shrink-0"
-                          onClick={() => markMovieAsWatched(movie)}
-                        >
-                          Mark as Watched
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
+        <TabsContent value="want">
+          {loading ? (
+            <MovieListSkeleton />
+          ) : wantList.length > 0 ? (
+            <MovieGrid movies={wantList} />
+          ) : (
+            <p className="text-muted-foreground text-center py-8">No movies in your Want list yet.</p>
+          )}
+        </TabsContent>
 
-              {/* Watched - added overflow-hidden */}
-              <Card className="p-4 overflow-hidden">
-                <h2 className="font-semibold mb-2">Watched</h2>
-                {moviesWatched.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No movies watched yet.</p>
-                ) : (
-                  <ul>
-                    {moviesWatched.map((movie) => (
-                      <li key={movie.id} className="mb-3 flex items-center gap-3 justify-between">
-                        <div className="flex gap-2 items-center min-w-0">
-                          {movie.poster_path && (
-                            <img
-                              src={`${IMAGE_BASE_URL}${movie.poster_path}`}
-                              alt={movie.title}
-                              className="w-10 h-14 object-cover rounded flex-shrink-0"
-                            />
-                          )}
-                          <div className="flex flex-col min-w-0">
-                            {/* Added truncate and max-width for long titles */}
-                            <span className="font-semibold truncate max-w-[120px] sm:max-w-[180px]">{movie.title}</span>
-                            <span className="text-xs text-gray-400 truncate max-w-[120px] sm:max-w-[180px]">
-                              {movie.release_date}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="whitespace-nowrap flex-shrink-0"
-                          onClick={() => moveMovieToWantList(movie)}
-                        >
-                          Move to Want List
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
+        <TabsContent value="watched">
+          {loading ? (
+            <MovieListSkeleton />
+          ) : watchedList.length > 0 ? (
+            <MovieGrid movies={watchedList} showRating />
+          ) : (
+            <p className="text-muted-foreground text-center py-8">No movies in your Watched list yet.</p>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function MovieGrid({ movies, showRating = false }: { movies: UserMovie[]; showRating?: boolean }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      {movies.map((movie) => (
+        <div key={movie.movie_id} className="relative">
+          <MovieCard
+            id={movie.movie_id}
+            title={movie.title}
+            poster_path={movie.poster_path || ""}
+            release_date={movie.release_date || ""}
+          />
+          {showRating && movie.rating !== undefined && (
+            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+              ⭐ {movie.rating}/10
             </div>
-          </TabsContent>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
-          {/* SERIES TAB */}
-          <TabsContent value="series">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Want to Watch - added overflow-hidden */}
-              <Card className="p-4 overflow-hidden">
-                <h2 className="font-semibold mb-2">Want to Watch</h2>
-                {loadingSeries ? (
-                  <div>Loading series...</div>
-                ) : errorSeries ? (
-                  <div className="text-red-500">{errorSeries}</div>
-                ) : seriesWant.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No series in this list.</p>
-                ) : (
-                  <ul>
-                    {seriesWant.map((series) => (
-                      <li key={series.id} className="mb-3 flex items-center gap-3 justify-between">
-                        <div className="flex gap-2 items-center min-w-0">
-                          {series.poster_path && (
-                            <img
-                              src={`${IMAGE_BASE_URL}${series.poster_path}`}
-                              alt={series.name}
-                              className="w-10 h-14 object-cover rounded flex-shrink-0"
-                            />
-                          )}
-                          <div className="flex flex-col min-w-0">
-                            {/* Added truncate and max-width for long titles */}
-                            <span className="font-semibold truncate max-w-[120px] sm:max-w-[180px]">{series.name}</span>
-                            <span className="text-xs text-gray-400 truncate max-w-[120px] sm:max-w-[180px]">
-                              {series.first_air_date}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="whitespace-nowrap flex-shrink-0"
-                          onClick={() => markSeriesAsWatched(series)}
-                        >
-                          Mark as Watched
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
-
-              {/* Watched - added overflow-hidden */}
-              <Card className="p-4 overflow-hidden">
-                <h2 className="font-semibold mb-2">Watched</h2>
-                {seriesWatched.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No series watched yet.</p>
-                ) : (
-                  <ul>
-                    {seriesWatched.map((series) => (
-                      <li key={series.id} className="mb-3 flex items-center gap-3 justify-between">
-                        <div className="flex gap-2 items-center min-w-0">
-                          {series.poster_path && (
-                            <img
-                              src={`${IMAGE_BASE_URL}${series.poster_path}`}
-                              alt={series.name}
-                              className="w-10 h-14 object-cover rounded flex-shrink-0"
-                            />
-                          )}
-                          <div className="flex flex-col min-w-0">
-                            {/* Added truncate and max-width for long titles */}
-                            <span className="font-semibold truncate max-w-[120px] sm:max-w-[180px]">{series.name}</span>
-                            <span className="text-xs text-gray-400 truncate max-w-[120px] sm:max-w-[180px]">
-                              {series.first_air_date}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="whitespace-nowrap flex-shrink-0"
-                          onClick={() => moveSeriesToWantList(series)}
-                        >
-                          Move to Want List
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </>
+function MovieListSkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Skeleton key={i} className="w-full aspect-[2/3] rounded-lg" />
+      ))}
+    </div>
   );
 }
