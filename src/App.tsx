@@ -1,14 +1,12 @@
-/* ---------------------------------- App.tsx --------------------------------- */
 import { useEffect, useState } from "react";
 import { type Session } from "@supabase/supabase-js";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import { supabase } from "@/lib/supabase";
-import SupraAuthPage from "./pages/supra-auth"; // ← your Auth component
+import SupraAuthPage from "./pages/supra-auth";
 import { AppSidebar } from "./components/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/site-header";
-
 import TrackerPage from "./pages/tracker";
 import ExploreMovie from "./pages/explore-movie";
 import ExploreTv from "./pages/explore-tv";
@@ -21,8 +19,23 @@ import { DataTable } from "./components/data-table";
 import data from "./data.json";
 import ProfilePage from "./pages/profile";
 
-/* ───────────────────── helper wrapper components ───────────────────── */
+import { Skeleton } from "@/components/ui/skeleton";
+import { LoaderCircle } from "lucide-react";
 
+/* ───── Loading Component ───── */
+const FullScreenLoader = () => {
+  return (
+    <div className="flex justify-center items-center h-screen bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <LoaderCircle className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+    </div>
+  );
+};
+
+/* ───── Dashboard Wrapper ───── */
 function Dashboard() {
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
@@ -97,17 +110,19 @@ function ExploreTvPage() {
   );
 }
 
-/* ───────────────────────────── main app ───────────────────────────── */
-
+/* ───── Main App Component ───── */
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true); // loading state to avoid flicker
 
-  /* 1️⃣  Keep the session in React state */
   useEffect(() => {
-    // initial check
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    // Initial session fetch
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false); // done loading
+    });
 
-    // subscribe to future changes
+    // Listen to auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, sess) => {
@@ -117,12 +132,14 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  /* 2️⃣  If not authenticated, show Supabase Auth UI */
+  if (loading) {
+    return <FullScreenLoader />; // Better loading UI
+  }
+
   if (!session) {
     return <SupraAuthPage />;
   }
 
-  /* 3️⃣  Authenticated area wrapped with sidebar / header */
   return (
     <SidebarProvider>
       <AppSidebar variant="inset" />
