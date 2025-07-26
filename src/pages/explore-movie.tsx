@@ -2,7 +2,6 @@ import { useEffect, useState, Fragment } from "react";
 import { Link } from "react-router-dom";
 import { proxyGet } from "../utils/tmdbProxy";
 import { MovieCard } from "../components/movie-card";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const IMAGE_BASE = "https://image.tmdb.org/t/p/";

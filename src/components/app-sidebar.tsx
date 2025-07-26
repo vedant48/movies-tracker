@@ -26,7 +26,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { ThemeToggle } from "./theme-toggle";
 import { cn } from "@/lib/utils";
 import { getCurrentUser } from "../utils/user";
 
@@ -174,10 +173,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             );
           })}
         </SidebarMenu>
-
-        <div className="p-2 flex justify-end">
-          <ThemeToggle />
-        </div>
       </SidebarContent>
 
       <SidebarFooter>

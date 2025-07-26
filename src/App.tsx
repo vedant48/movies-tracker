@@ -21,9 +21,9 @@ import ProfilePage from "./pages/profile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoaderCircle } from "lucide-react";
 import MovieTrackerPage from "./pages/tracker";
-import UsersPage from "./pages/users";
 import UserProfilePage from "./pages/user-profile";
 import { BottomNav } from "./components/bottom-navigation";
+import LeaderboardPage from "./pages/leaderboard";
 
 /* ───── Loading Component ───── */
 const FullScreenLoader = () => {
@@ -113,6 +113,18 @@ function ExploreTvPage() {
   );
 }
 
+function Leaderboard() {
+  return (
+    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <div className="px-4 lg:px-6">
+        <h1 className="text-2xl font-bold">Leaderboard</h1>
+        <p className="text-muted-foreground">Top watcher as per runtime.</p>
+        <LeaderboardPage />
+      </div>
+    </div>
+  );
+}
+
 /* ───── Main App Component ───── */
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -176,7 +188,7 @@ export default function App() {
             <Route path="/movie/:id" element={<MoviePage />} />
             <Route path="/series/:id" element={<SeriesPage />} />
 
-            <Route path="/users" element={<UsersPage />} />
+            <Route path="/users" element={<Leaderboard />} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

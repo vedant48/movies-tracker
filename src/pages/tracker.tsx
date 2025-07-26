@@ -53,11 +53,9 @@ export default function MovieTrackerPage() {
   }, []);
 
   return (
-    <div className="p-4 md:p-6">
-      <h1 className="text-2xl font-bold mb-4">Your Movie Tracker</h1>
-
+    <div>
       <Tabs defaultValue="want">
-        <TabsList className="mb-4">
+        <TabsList className="my-8">
           <TabsTrigger value="want">Want to Watch</TabsTrigger>
           <TabsTrigger value="watched">Watched</TabsTrigger>
         </TabsList>
