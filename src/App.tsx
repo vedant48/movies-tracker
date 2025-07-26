@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LoaderCircle } from "lucide-react";
 import MovieTrackerPage from "./pages/tracker";
 import UsersPage from "./pages/users";
+import UserProfilePage from "./pages/user-profile";
 
 /* ───── Loading Component ───── */
 const FullScreenLoader = () => {
@@ -161,6 +162,7 @@ export default function App() {
           {/* Search / Profile */}
           <Route path="/search" element={<Search />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:userId" element={<UserProfilePage />} />
 
           {/* Details */}
           <Route path="/movie/:id" element={<MoviePage />} />

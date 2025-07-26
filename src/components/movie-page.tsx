@@ -311,50 +311,52 @@ export default function MoviePage() {
 
   if (loading) {
     return (
-      <div className="p-4 max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row gap-8">
-          <Skeleton className="w-full md:w-1/3 h-[500px] rounded-xl" />
-          <div className="w-full md:w-2/3 space-y-6">
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-3/4" />
-              <Skeleton className="h-6 w-1/3" />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-8 w-20 rounded-full" />
-              ))}
-            </div>
-            <Separator className="my-4" />
-            <div className="space-y-3">
-              <Skeleton className="h-6 w-1/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-            </div>
-            <div className="flex flex-wrap gap-4 mt-8">
-              <Skeleton className="h-10 w-32 rounded-full" />
-              <Skeleton className="h-10 w-32 rounded-full" />
-            </div>
+      <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <div className="px-4 lg:px-6">
+          <div className="flex flex-col md:flex-row gap-8">
+            <Skeleton className="w-full md:w-1/3 h-[500px] rounded-xl" />
+            <div className="w-full md:w-2/3 space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-3/4" />
+                <Skeleton className="h-6 w-1/3" />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-20 rounded-full" />
+                ))}
+              </div>
+              <Separator className="my-4" />
+              <div className="space-y-3">
+                <Skeleton className="h-6 w-1/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+              <div className="flex flex-wrap gap-4 mt-8">
+                <Skeleton className="h-10 w-32 rounded-full" />
+                <Skeleton className="h-10 w-32 rounded-full" />
+              </div>
 
-            {/* Skeleton for new sections */}
-            <Skeleton className="h-6 w-1/4 mt-12" />
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex flex-col items-center flex-shrink-0 w-24">
-                  <Skeleton className="rounded-full w-20 h-20 mb-2" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
-              ))}
-            </div>
+              {/* Skeleton for new sections */}
+              <Skeleton className="h-6 w-1/4 mt-12" />
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex flex-col items-center flex-shrink-0 w-24">
+                    <Skeleton className="rounded-full w-20 h-20 mb-2" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                ))}
+              </div>
 
-            <Skeleton className="h-6 w-1/4 mt-8" />
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="flex flex-col items-center flex-shrink-0 w-24">
-                  <Skeleton className="rounded-full w-20 h-20 mb-2" />
-                  <Skeleton className="h-4 w-16" />
-                </div>
-              ))}
+              <Skeleton className="h-6 w-1/4 mt-8" />
+              <div className="flex gap-4 overflow-x-auto pb-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="flex flex-col items-center flex-shrink-0 w-24">
+                    <Skeleton className="rounded-full w-20 h-20 mb-2" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
