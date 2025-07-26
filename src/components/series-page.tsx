@@ -718,7 +718,7 @@ export default function SeriesPage() {
           )}
         </div>
         <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-          <DrawerContent className="!fixed !top-[0%] !h-auto !max-h-[90vh]">
+          <DrawerContent className="!fixed !top-[-10%] !h-auto !max-h-[100vh]">
             <div className="flex flex-col h-full overflow-y-auto">
               <DrawerHeader className="border-b px-6 py-4 bg-muted/30">
                 <div className="flex justify-between items-start">
