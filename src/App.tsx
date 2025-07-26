@@ -24,6 +24,7 @@ import MovieTrackerPage from "./pages/tracker";
 import UserProfilePage from "./pages/user-profile";
 import { BottomNav } from "./components/bottom-navigation";
 import LeaderboardPage from "./pages/leaderboard";
+import { ScrollToTop } from "./utils/scroll-to-top";
 
 /* ───── Loading Component ───── */
 const FullScreenLoader = () => {
@@ -167,6 +168,7 @@ export default function App() {
         <SiteHeader />
         {/* Add bottom padding for mobile to prevent content overlap */}
         <div className="flex-1 overflow-auto pb-16 md:pb-0">
+          <ScrollToTop /> {/* Scroll to top on route change */}
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Navigate to="/" replace />} />
