@@ -23,6 +23,7 @@ import { LoaderCircle } from "lucide-react";
 import MovieTrackerPage from "./pages/tracker";
 import UsersPage from "./pages/users";
 import UserProfilePage from "./pages/user-profile";
+import { BottomNav } from "./components/bottom-navigation";
 
 /* ───── Loading Component ───── */
 const FullScreenLoader = () => {
@@ -144,36 +145,47 @@ export default function App() {
 
   return (
     <SidebarProvider>
-      <AppSidebar variant="inset" />
+      {/* Desktop Sidebar - hidden on mobile */}
+      <div className="hidden md:flex">
+        <AppSidebar variant="inset" />
+      </div>
+
+      {/* Main Content Area */}
       <SidebarInset className="flex flex-1 flex-col overflow-hidden">
         <SiteHeader />
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Navigate to="/" replace />} />
+        {/* Add bottom padding for mobile to prevent content overlap */}
+        <div className="flex-1 overflow-auto pb-16 md:pb-0">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
-          {/* Activity */}
-          <Route path="/activity/movies" element={<Activity />} />
-          <Route path="/activity/tv" element={<Activity />} />
+            {/* Activity */}
+            <Route path="/activity/movies" element={<Activity />} />
+            <Route path="/activity/tv" element={<Activity />} />
 
-          {/* Explore */}
-          <Route path="/explore/movies" element={<ExploreMoviePage />} />
-          <Route path="/explore/tv" element={<ExploreTvPage />} />
+            {/* Explore */}
+            <Route path="/explore/movies" element={<ExploreMoviePage />} />
+            <Route path="/explore/tv" element={<ExploreTvPage />} />
 
-          {/* Search / Profile */}
-          <Route path="/search" element={<Search />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/:userId" element={<UserProfilePage />} />
+            {/* Search / Profile */}
+            <Route path="/search" element={<Search />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:userId" element={<UserProfilePage />} />
 
-          {/* Details */}
-          <Route path="/movie/:id" element={<MoviePage />} />
-          <Route path="/series/:id" element={<SeriesPage />} />
+            {/* Details */}
+            <Route path="/movie/:id" element={<MoviePage />} />
+            <Route path="/series/:id" element={<SeriesPage />} />
 
-          <Route path="/users" element={<UsersPage />} />
+            <Route path="/users" element={<UsersPage />} />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
       </SidebarInset>
+
+      {/* Bottom Navigation - visible only on mobile */}
+      <BottomNav />
     </SidebarProvider>
   );
 }

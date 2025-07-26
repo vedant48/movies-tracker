@@ -1,16 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type SetStateAction } from "react";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerFooter,
-  DrawerDescription,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Pencil, LogOut, User, Heart, Eye, Users, Film, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -18,8 +11,8 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
+import { FollowersDrawer } from "../components/follower-drawer";
+import { FollowingDrawer } from "../components/following-drawer";
 
 export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
@@ -40,10 +33,6 @@ export default function ProfilePage() {
     watchedSeries: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [followers, setFollowers] = useState<any[]>([]);
-  const [following, setFollowing] = useState<any[]>([]);
-  const [isFetchingFollowers, setIsFetchingFollowers] = useState(false);
-  const [isFetchingFollowing, setIsFetchingFollowing] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
@@ -179,101 +168,13 @@ export default function ProfilePage() {
       .slice(0, 2);
   };
 
-  const fetchFollowers = async () => {
-    if (!user) return;
-    setIsFetchingFollowers(true);
-
-    try {
-      const { data, error } = await supabase
-        .from("follows")
-        .select("follower: profiles!follows_follower_id_fkey (*)")
-        .eq("followee_id", user.id);
-
-      if (error) throw error;
-
-      setFollowers(data.map((item: { follower: any; }) => item.follower));
-    } catch (error) {
-      console.error("Error fetching followers:", error);
-      toast.error("Failed to load followers");
-    } finally {
-      setIsFetchingFollowers(false);
-    }
+  // Stats update callbacks
+  const handleFollowerRemoved = () => {
+    setStats((prev) => ({ ...prev, followers: prev.followers - 1 }));
   };
 
-  console.error("followers:", followers);
-
-
-  const fetchFollowing = async () => {
-    if (!user) return;
-    setIsFetchingFollowing(true);
-
-    try {
-      const { data, error } = await supabase
-        .from("follows")
-        .select("followee: profiles!follows_followee_id_fkey (*)")
-        .eq("follower_id", user.id);
-
-      if (error) throw error;
-
-      setFollowing(data.map((item) => item.followee));
-    } catch (error) {
-      console.error("Error fetching following:", error);
-      toast.error("Failed to load following");
-    } finally {
-      setIsFetchingFollowing(false);
-    }
-  };
-
-  const handleRemoveFollower = async (followerId: string) => {
-    try {
-      const { error } = await supabase
-        .from("follows")
-        .delete()
-        .eq("follower_id", followerId)
-        .eq("followee_id", user.id);
-
-      if (error) throw error;
-
-      setFollowers(followers.filter((f) => f.id !== followerId));
-      setStats((prev) => ({ ...prev, followers: prev.followers - 1 }));
-      toast.success("Follower removed");
-    } catch (error) {
-      console.error("Error removing follower:", error);
-      toast.error("Failed to remove follower");
-    }
-  };
-
-  const handleUnfollow = async (followeeId: string) => {
-    try {
-      const { error } = await supabase
-        .from("follows")
-        .delete()
-        .eq("follower_id", user.id)
-        .eq("followee_id", followeeId);
-
-      if (error) throw error;
-
-      setFollowing(following.filter((f) => f.id !== followeeId));
-      setStats((prev) => ({ ...prev, following: prev.following - 1 }));
-      toast.success("Unfollowed successfully");
-    } catch (error) {
-      console.error("Error unfollowing:", error);
-      toast.error("Failed to unfollow");
-    }
-  };
-
-  const openFollowersDrawer = async () => {
-    setIsFollowersDrawerOpen(true);
-    if (followers.length === 0) {
-      await fetchFollowers();
-    }
-  };
-
-  const openFollowingDrawer = async () => {
-    setIsFollowingDrawerOpen(true);
-    if (following.length === 0) {
-      await fetchFollowing();
-    }
+  const handleUnfollowed = () => {
+    setStats((prev) => ({ ...prev, following: prev.following - 1 }));
   };
 
   if (isLoading) {
@@ -346,7 +247,7 @@ export default function ProfilePage() {
 
             {/* Stats Section */}
             <div className="flex flex-wrap gap-6 mt-8">
-              <div className="flex flex-col items-center cursor-pointer group" onClick={openFollowersDrawer}>
+              <div className="flex flex-col items-center cursor-pointer group" onClick={() => setIsFollowersDrawerOpen(true)}>
                 <div className="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full group-hover:bg-indigo-200 dark:group-hover:bg-indigo-900/50 transition-colors">
                   <Users className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
@@ -356,7 +257,7 @@ export default function ProfilePage() {
                 </span>
               </div>
 
-              <div className="flex flex-col items-center cursor-pointer group" onClick={openFollowingDrawer}>
+              <div className="flex flex-col items-center cursor-pointer group" onClick={() => setIsFollowingDrawerOpen(true)}>
                 <div className="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full group-hover:bg-indigo-200 dark:group-hover:bg-indigo-900/50 transition-colors">
                   <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
@@ -469,7 +370,7 @@ export default function ProfilePage() {
                   <Input
                     id="username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={(e: { target: { value: SetStateAction<string> } }) => setUsername(e.target.value)}
                     placeholder="your_username"
                   />
                 </div>
@@ -479,7 +380,7 @@ export default function ProfilePage() {
                   <Input
                     id="fullName"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(e: { target: { value: SetStateAction<string> } }) => setFullName(e.target.value)}
                     placeholder="Your full name"
                   />
                 </div>
@@ -489,7 +390,7 @@ export default function ProfilePage() {
                   <Input
                     id="avatarUrl"
                     value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    onChange={(e: { target: { value: SetStateAction<string> } }) => setAvatarUrl(e.target.value)}
                     placeholder="https://..."
                   />
                 </div>
@@ -499,7 +400,7 @@ export default function ProfilePage() {
                   <Textarea
                     id="bio"
                     value={bio}
-                    onChange={(e) => setBio(e.target.value)}
+                    onChange={(e: { target: { value: SetStateAction<string> } }) => setBio(e.target.value)}
                     placeholder="Tell us something about yourself"
                     rows={4}
                   />
@@ -521,158 +422,22 @@ export default function ProfilePage() {
       </Drawer>
 
       {/* Followers Drawer */}
-      <Drawer open={isFollowersDrawerOpen} onOpenChange={setIsFollowersDrawerOpen}>
-        <DrawerContent className="!fixed !top-[-10%] !h-auto !max-h-[100vh]">
-          <div className="mx-auto w-full max-w-2xl">
-            <DrawerHeader className="flex justify-between items-center">
-              <div>
-                <DrawerTitle className="text-xl flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Followers
-                </DrawerTitle>
-                <DrawerDescription>{followers.length} people following you</DrawerDescription>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setIsFollowersDrawerOpen(false)}>
-                <X className="w-5 h-5" />
-              </Button>
-            </DrawerHeader>
-
-            <div className="p-4">
-              {isFetchingFollowers ? (
-                <div className="space-y-4 py-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3">
-                      <Skeleton className="w-12 h-12 rounded-full" />
-                      <div className="space-y-2 flex-1">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
-                      <Skeleton className="h-9 w-24 rounded-md" />
-                    </div>
-                  ))}
-                </div>
-              ) : followers.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                  <h3 className="text-lg font-medium">No followers yet</h3>
-                  <p className="text-muted-foreground">Your followers will appear here</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {followers.map((follower) => (
-                    <div
-                      key={follower.id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
-                    >
-                      <Link
-                        to={`/profile/${follower.id}`}
-                        className="flex items-center gap-3 flex-1"
-                        onClick={() => setIsFollowersDrawerOpen(false)}
-                      >
-                        <Avatar className="w-12 h-12">
-                          {follower.avatar_url ? (
-                            <AvatarImage src={follower.avatar_url} />
-                          ) : (
-                            <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-                              {getInitials(follower.full_name || follower.email)}
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">
-                            {follower.full_name || (follower.email ? follower.email.split("@")[0] : "Unknown")}
-                          </div>
-                          <div className="text-sm text-muted-foreground">@{follower.username}</div>
-                        </div>
-                      </Link>
-                      <Button variant="outline" size="sm" onClick={() => handleRemoveFollower(follower.id)}>
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
+      <FollowersDrawer
+        profileUserId={user.id}
+        currentUserId={user.id}
+        open={isFollowersDrawerOpen}
+        onOpenChange={setIsFollowersDrawerOpen}
+        onFollowerRemoved={handleFollowerRemoved}
+      />
 
       {/* Following Drawer */}
-      <Drawer open={isFollowingDrawerOpen} onOpenChange={setIsFollowingDrawerOpen}>
-        <DrawerContent className="!fixed !top-[-10%] !h-auto !max-h-[100vh]">
-          <div className="mx-auto w-full max-w-2xl">
-            <DrawerHeader className="flex justify-between items-center">
-              <div>
-                <DrawerTitle className="text-xl flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Following
-                </DrawerTitle>
-                <DrawerDescription>You're following {following.length} people</DrawerDescription>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setIsFollowingDrawerOpen(false)}>
-                <X className="w-5 h-5" />
-              </Button>
-            </DrawerHeader>
-
-            <div className="p-4">
-              {isFetchingFollowing ? (
-                <div className="space-y-4 py-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3">
-                      <Skeleton className="w-12 h-12 rounded-full" />
-                      <div className="space-y-2 flex-1">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
-                      <Skeleton className="h-9 w-24 rounded-md" />
-                    </div>
-                  ))}
-                </div>
-              ) : following.length === 0 ? (
-                <div className="text-center py-8">
-                  <User className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                  <h3 className="text-lg font-medium">Not following anyone yet</h3>
-                  <p className="text-muted-foreground">People you follow will appear here</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {following.map((followee) => (
-                    <div
-                      key={followee.id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
-                    >
-                      <Link
-                        to={`/profile/${followee.id}`}
-                        className="flex items-center gap-3 flex-1"
-                        onClick={() => setIsFollowingDrawerOpen(false)}
-                      >
-                        <Avatar className="w-12 h-12">
-                          {followee.avatar_url ? (
-                            <AvatarImage src={followee.avatar_url} />
-                          ) : (
-                            <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-                              {getInitials(followee.full_name || followee.email)}
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">
-                            {followee.full_name || (followee.email ? followee.email.split("@")[0] : "Unknown")}
-                          </div>
-                          <div className="text-sm text-muted-foreground">@{followee.username}</div>
-                        </div>
-                      </Link>
-                      <Button variant="outline" size="sm" onClick={() => handleUnfollow(followee.id)}>
-                        Unfollow
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
+      <FollowingDrawer
+        profileUserId={user.id}
+        currentUserId={user.id}
+        open={isFollowingDrawerOpen}
+        onOpenChange={setIsFollowingDrawerOpen}
+        onUnfollowed={handleUnfollowed}
+      />
     </div>
   );
 }

@@ -9,6 +9,26 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { MovieCard } from "@/components/movie-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FollowersDrawer } from "../components/follower-drawer";
+import { FollowingDrawer } from "../components/following-drawer";
+
+type Movie = {
+  id: number;
+  movie_id: number;
+  title: string;
+  poster_path?: string;
+  release_date?: string;
+};
+
+type Series = {
+  id: number;
+  series_id: number;
+  title: string;
+  poster_path?: string;
+  release_date?: string;
+};
 
 export default function UserProfilePage() {
   const { userId } = useParams();
@@ -24,62 +44,48 @@ export default function UserProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isCurrentUser, setIsCurrentUser] = useState(false);
+  const [isFollowersDrawerOpen, setIsFollowersDrawerOpen] = useState(false);
+  const [isFollowingDrawerOpen, setIsFollowingDrawerOpen] = useState(false);
+
+  const [watchedMoviesList, setWatchedMoviesList] = useState<Movie[]>([]);
+  const [watchedSeriesList, setWatchedSeriesList] = useState<Series[]>([]);
+  const [wantMoviesList, setWantMoviesList] = useState<Movie[]>([]);
+  const [wantSeriesList, setWantSeriesList] = useState<Series[]>([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
       setIsLoading(true);
-
       try {
-        // Get current user to check if we're viewing our own profile
         const {
           data: { user: currentUser },
         } = await supabase.auth.getUser();
 
-        // Check if we're viewing our own profile
         setIsCurrentUser(currentUser?.id === userId);
 
-        // Fetch profile data
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", userId)
           .single();
-
         if (profileError) throw profileError;
         setProfile(profileData);
 
-        // Fetch stats
+        // Fetch movie/series stats and lists
         const [
           { count: followersCount },
           { count: followingCount },
-          { count: wantMoviesCount },
-          { count: watchedMoviesCount },
-          { count: wantSeriesCount },
-          { count: watchedSeriesCount },
+          { count: wantMoviesCount, data: wantMovies },
+          { count: watchedMoviesCount, data: watchedMovies },
+          { count: wantSeriesCount, data: wantSeries },
+          { count: watchedSeriesCount, data: watchedSeries },
           { data: followStatus },
         ] = await Promise.all([
           supabase.from("follows").select("*", { count: "exact", head: true }).eq("followee_id", userId),
           supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
-          supabase
-            .from("user_movies")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .eq("status", "want"),
-          supabase
-            .from("user_movies")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .eq("status", "watched"),
-          supabase
-            .from("user_series")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .eq("status", "want"),
-          supabase
-            .from("user_series")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .eq("status", "watched"),
+          supabase.from("user_movies").select("*").eq("user_id", userId).eq("status", "want"),
+          supabase.from("user_movies").select("*").eq("user_id", userId).eq("status", "watched"),
+          supabase.from("user_series").select("*").eq("user_id", userId).eq("status", "want"),
+          supabase.from("user_series").select("*").eq("user_id", userId).eq("status", "watched"),
           currentUser?.id
             ? supabase.from("follows").select("*").eq("follower_id", currentUser.id).eq("followee_id", userId).single()
             : Promise.resolve({ data: null }),
@@ -94,6 +100,12 @@ export default function UserProfilePage() {
           watchedMovies: watchedMoviesCount || 0,
           watchedSeries: watchedSeriesCount || 0,
         });
+
+        // Set fetched lists
+        setWantMoviesList(wantMovies || []);
+        setWatchedMoviesList(watchedMovies || []);
+        setWantSeriesList(wantSeries || []);
+        setWatchedSeriesList(watchedSeries || []);
       } catch (error) {
         console.error("Error fetching profile:", error);
         toast.error("Could not load profile");
@@ -154,6 +166,14 @@ export default function UserProfilePage() {
         .toUpperCase()
         .slice(0, 2) || "US"
     );
+  };
+
+  const handleFollowerRemoved = () => {
+    setStats((prev) => ({ ...prev, followers: prev.followers - 1 }));
+  };
+
+  const handleUnfollowed = () => {
+    setStats((prev) => ({ ...prev, following: prev.following - 1 }));
   };
 
   if (isLoading) {
@@ -267,7 +287,10 @@ export default function UserProfilePage() {
 
               {/* Stats Section */}
               <div className="flex flex-wrap gap-6 mt-8">
-                <div className="flex flex-col items-center">
+                <div
+                  className="flex flex-col items-center cursor-pointer group"
+                  onClick={() => setIsFollowersDrawerOpen(true)}
+                >
                   <div className="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full">
                     <Users className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                   </div>
@@ -275,7 +298,10 @@ export default function UserProfilePage() {
                   <span className="text-sm text-muted-foreground">Followers</span>
                 </div>
 
-                <div className="flex flex-col items-center">
+                <div
+                  className="flex flex-col items-center cursor-pointer group"
+                  onClick={() => setIsFollowingDrawerOpen(true)}
+                >
                   <div className="bg-indigo-100 dark:bg-indigo-900/30 p-3 rounded-full">
                     <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                   </div>
@@ -357,6 +383,110 @@ export default function UserProfilePage() {
             </p>
           </Card>
         </div>
+
+        <Tabs defaultValue="want" className="w-full mt-8">
+          {/* Tab Headers */}
+          <TabsList className="mb-4">
+            <TabsTrigger value="want">Want to Watch</TabsTrigger>
+            <TabsTrigger value="watched">Watched</TabsTrigger>
+          </TabsList>
+
+          {/* Want Tab Content */}
+          <TabsContent value="want">
+            {/* Want Movies */}
+            {wantMoviesList.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Movies</h3>
+                <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+                  {wantMoviesList.map((movie) => (
+                    <MovieCard
+                      key={movie.id}
+                      id={movie.movie_id}
+                      title={movie.title}
+                      poster_path={movie.poster_path || ""}
+                      release_date={movie.release_date || ""}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Want Series */}
+            {wantSeriesList.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Series</h3>
+                <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+                  {wantSeriesList.map((series) => (
+                    <MovieCard
+                      key={series.id}
+                      id={series.series_id}
+                      title={series.title}
+                      poster_path={series.poster_path || ""}
+                      release_date={series.release_date || ""}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Watched Tab Content */}
+          <TabsContent value="watched">
+            {/* Watched Movies */}
+            {watchedMoviesList.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Movies</h3>
+                <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+                  {watchedMoviesList.map((movie) => (
+                    <MovieCard
+                      key={movie.id}
+                      id={movie.movie_id}
+                      title={movie.title}
+                      poster_path={movie.poster_path || ""}
+                      release_date={movie.release_date || ""}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Watched Series */}
+            {watchedSeriesList.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Series</h3>
+                <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+                  {watchedSeriesList.map((series) => (
+                    <MovieCard
+                      key={series.id}
+                      id={series.series_id}
+                      title={series.title}
+                      poster_path={series.poster_path || ""}
+                      release_date={series.release_date || ""}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Followers Drawer */}
+        <FollowersDrawer
+          profileUserId={userId || ""}
+          currentUserId={userId || ""}
+          open={isFollowersDrawerOpen}
+          onOpenChange={setIsFollowersDrawerOpen}
+          onFollowerRemoved={handleFollowerRemoved}
+        />
+
+        {/* Following Drawer */}
+        <FollowingDrawer
+          profileUserId={userId || ""}
+          currentUserId={userId || ""}
+          open={isFollowingDrawerOpen}
+          onOpenChange={setIsFollowingDrawerOpen}
+          onUnfollowed={handleUnfollowed}
+        />
       </div>
     </div>
   );
