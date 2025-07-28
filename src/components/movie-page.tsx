@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Bookmark, CheckCircle, Edit } from "lucide-react";
+import PersonDrawer from "./person-drawer";
 
 interface Movie {
   id: number;
@@ -77,25 +78,6 @@ interface Collection {
   }[];
 }
 
-interface PersonDetail {
-  id: number;
-  name: string;
-  biography: string;
-  profile_path: string;
-  birthday: string;
-  place_of_birth: string;
-  known_for_department: string;
-}
-
-interface PersonMovieCredit {
-  id: number;
-  title: string;
-  poster_path: string;
-  character: string;
-  release_date: string;
-  vote_average: number;
-}
-
 const IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
 export default function MoviePage() {
@@ -105,10 +87,6 @@ export default function MoviePage() {
   const [collection, setCollection] = useState<Collection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedPerson, setSelectedPerson] = useState<PersonDetail | null>(null);
-  const [personMovies, setPersonMovies] = useState<PersonMovieCredit[]>([]);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isPersonLoading, setIsPersonLoading] = useState(false);
   const [movieStatus, setMovieStatus] = useState<"want" | "watched" | null>(null);
   const [loadingStatus, setLoadingStatus] = useState<"want" | "watched" | "delete" | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -117,6 +95,8 @@ export default function MoviePage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [tempRating, setTempRating] = useState<number | null>(null);
   const [tempReview, setTempReview] = useState("");
+  const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
+  const [isPersonDrawerOpen, setIsPersonDrawerOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -166,12 +146,6 @@ export default function MoviePage() {
     return `${hours}h ${remainingMinutes}m`;
   };
 
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return "N/A";
-    const options: Intl.DateTimeFormatOptions = { year: "numeric", month: "long", day: "numeric" };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
-
   // Get top 10 cast members
   const topCast = credits?.cast.slice(0, 10) || [];
 
@@ -181,34 +155,14 @@ export default function MoviePage() {
       .filter((person) => ["Director", "Producer", "Writer", "Screenplay"].includes(person.job || ""))
       .slice(0, 6) || [];
 
-  const handlePersonClick = async (personId: number) => {
-    setIsPersonLoading(true);
-    setIsDrawerOpen(true);
-
-    try {
-      const [personData, movieCredits] = await Promise.all([
-        proxyGet<PersonDetail>(`/v1/tmdb/3/person/${personId}`),
-        proxyGet<{ cast: PersonMovieCredit[] }>(`/v1/tmdb/3/person/${personId}/movie_credits`),
-      ]);
-
-      setSelectedPerson(personData);
-      // Sort movies by release date (newest first)
-      const sortedMovies = [...movieCredits.cast].sort(
-        (a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
-      );
-      setPersonMovies(sortedMovies);
-    } catch (err) {
-      console.error("Error loading person details:", err);
-      setError("Failed to load person details.");
-    } finally {
-      setIsPersonLoading(false);
-    }
+  const handlePersonClick = (personId: number) => {
+    setSelectedPersonId(personId);
+    setIsPersonDrawerOpen(true);
   };
 
-  const closeDrawer = () => {
-    setIsDrawerOpen(false);
-    setSelectedPerson(null);
-    setPersonMovies([]);
+  const closePersonDrawer = () => {
+    setIsPersonDrawerOpen(false);
+    setSelectedPersonId(null);
   };
 
   useEffect(() => {
@@ -851,146 +805,8 @@ export default function MoviePage() {
             </div>
           </div>
         </div>
-        <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-          <DrawerContent className="!fixed !top-[-10%] !h-auto !max-h-[100vh]">
-            <div className="flex flex-col h-full overflow-y-auto">
-              <DrawerHeader className="border-b px-6 py-4 bg-muted/30">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <DrawerTitle className="text-2xl font-bold">{selectedPerson?.name}</DrawerTitle>
-                    <DrawerDescription>{selectedPerson?.known_for_department}</DrawerDescription>
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={closeDrawer}>
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
-              </DrawerHeader>
 
-              <div className="p-6 space-y-10">
-                {isPersonLoading ? (
-                  <LoadingSkeleton />
-                ) : selectedPerson ? (
-                  <>
-                    {/* Profile & Bio Section */}
-                    <div className="flex flex-col md:flex-row gap-8">
-                      <div className="flex flex-col items-center">
-                        {selectedPerson.profile_path ? (
-                          <img
-                            src={`${IMAGE_BASE_URL}${selectedPerson.profile_path}`}
-                            alt={selectedPerson.name}
-                            className="rounded-full w-40 h-40 object-cover mb-4 shadow-lg"
-                          />
-                        ) : (
-                          <div className="rounded-full w-40 h-40 bg-gray-200 flex items-center justify-center mb-4">
-                            <User className="w-20 h-20 text-gray-400" />
-                          </div>
-                        )}
-                        <div className="text-center text-sm text-muted-foreground">
-                          {selectedPerson.birthday && (
-                            <div>
-                              <p className="font-medium">Born</p>
-                              <p>
-                                {formatDate(selectedPerson.birthday)}
-                                {selectedPerson.place_of_birth && ` • ${selectedPerson.place_of_birth}`}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold mb-3">Biography</h3>
-                        {selectedPerson.biography ? (
-                          <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                            {selectedPerson.biography.length > 800
-                              ? selectedPerson.biography.slice(0, 800) + "…"
-                              : selectedPerson.biography}
-                          </p>
-                        ) : (
-                          <p className="italic text-muted-foreground">No biography available.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Filmography Section */}
-                    {personMovies.length > 0 && (
-                      <div>
-                        <h3 className="text-2xl font-bold mb-4">🎬 Filmography</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-                          {personMovies.map((movie) => (
-                            <Link to={`/movie/${movie.id}`} key={movie.id} className="group" onClick={closeDrawer}>
-                              <Card className="border hover:shadow transition-shadow py-0">
-                                {movie.poster_path ? (
-                                  <img
-                                    src={`${IMAGE_BASE_URL}${movie.poster_path}`}
-                                    alt={movie.title}
-                                    className="rounded-t w-full h-52 object-cover"
-                                  />
-                                ) : (
-                                  <div className="bg-muted w-full h-52 flex items-center justify-center">
-                                    <Film className="w-8 h-8 text-muted-foreground" />
-                                  </div>
-                                )}
-                                <CardContent className="p-2">
-                                  <h4 className="text-sm font-semibold truncate">{movie.title}</h4>
-                                  <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                                    <span>{movie.release_date?.slice(0, 4) || "N/A"}</span>
-                                    <span className="flex items-center gap-1">
-                                      <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                                      {movie.vote_average.toFixed(1)}
-                                    </span>
-                                  </div>
-                                  {movie.character && (
-                                    <p className="text-xs text-muted-foreground truncate mt-1">as {movie.character}</p>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-center mt-10">
-                    <Info className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-xl font-semibold">Person details not available</h3>
-                    <Button variant="outline" className="mt-4" onClick={closeDrawer}>
-                      Close
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </DrawerContent>
-        </Drawer>
-      </div>
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="p-4 space-y-6">
-      <div className="flex gap-8">
-        <Skeleton className="w-32 h-32 rounded-full" />
-        <div className="flex-1 space-y-3">
-          <Skeleton className="h-6 w-3/4" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3" />
-        </div>
-      </div>
-      <div>
-        <Skeleton className="h-6 w-1/4 mb-4" />
-        <div className="flex gap-4 overflow-x-auto">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="w-32 flex-shrink-0 space-y-2">
-              <Skeleton className="w-24 h-36 rounded-lg mx-auto" />
-              <Skeleton className="h-4 w-20 mx-auto" />
-            </div>
-          ))}
-        </div>
+        <PersonDrawer personId={selectedPersonId} isOpen={isPersonDrawerOpen} onClose={closePersonDrawer} />
       </div>
     </div>
   );
