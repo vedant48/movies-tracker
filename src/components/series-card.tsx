@@ -8,7 +8,7 @@ interface SeriesCardProps {
   name: string;
   poster_path: string;
   first_air_date: string;
-  vote_average: number;
+  vote_average?: number;
   overview?: string;
 }
 
@@ -37,7 +37,7 @@ export function SeriesCard({ id, name, poster_path, first_air_date, vote_average
             <div className="absolute top-2 right-2">
               <Badge variant="secondary">
                 <Star className="w-4 h-4 fill-white" />
-                {vote_average.toFixed(1)}
+                {vote_average?.toFixed(1)}
               </Badge>
             </div>
 

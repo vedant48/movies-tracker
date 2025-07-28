@@ -23,7 +23,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { Bookmark, CheckCircle, Edit } from "lucide-react";
+import { Bookmark, CheckCircle, Edit, Trash2, Loader2, Pencil } from "lucide-react";
 import PersonDrawer from "./person-drawer";
 
 interface Movie {
@@ -228,6 +228,8 @@ export default function MoviePage() {
 
       toast.success(`Movie added to ${status === "want" ? "Want" : "Watched"} list`);
       setMovieStatus(status);
+      setUserRating(rating ?? tempRating);
+      setUserReview(review ?? tempReview);
     } catch (err: any) {
       console.error("Save error:", err);
       toast.error(err.message || "Error saving movie.");
@@ -494,30 +496,39 @@ export default function MoviePage() {
               <CardFooter className="flex flex-col gap-3 mt-4">
                 <div className="flex flex-col gap-4 w-full">
                   {movieStatus === "want" ? (
-                    <div className="flex flex-col items-center gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                      <div className="flex items-center gap-2 text-blue-700">
+                    <div className="flex flex-col items-center gap-4 p-4 bg-secondary/50 rounded-xl border">
+                      <div className="flex items-center gap-2 text-primary">
                         <Bookmark className="w-5 h-5" />
                         <span className="font-medium">This movie is in your Want List</span>
                       </div>
                       <div className="flex gap-3">
-                        <Button onClick={handleDeleteMovie} disabled={loadingStatus === "delete"}>
+                        <Button variant="outline" onClick={handleDeleteMovie} disabled={loadingStatus === "delete"}>
+                          {loadingStatus === "delete" ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-2" />
+                          )}
                           Remove
                         </Button>
                         <Button onClick={() => setShowWatchedModal(true)} disabled={loadingStatus === "watched"}>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          {loadingStatus === "watched" ? "Marking..." : "Mark as Watched"}
+                          {loadingStatus === "watched" ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                          )}
+                          Mark as Watched
                         </Button>
                       </div>
                     </div>
                   ) : movieStatus === "watched" ? (
-                    <div className="flex flex-col gap-4 p-4 bg-green-50 rounded-xl border border-green-100">
-                      <div className="flex items-center gap-2 text-green-700">
+                    <div className="flex flex-col gap-4 p-4 bg-success/10 rounded-xl border">
+                      <div className="flex items-center gap-2 text-success">
                         <CheckCircle className="w-5 h-5" />
                         <span className="font-medium">You've watched this movie</span>
                       </div>
 
                       {(userRating !== null || userReview) && (
-                        <div className="p-3 bg-white rounded-lg border">
+                        <div className="p-3 bg-background rounded-lg border">
                           {userRating !== null && (
                             <div className="flex items-center gap-2 mb-2">
                               <div className="flex">
@@ -527,7 +538,7 @@ export default function MoviePage() {
                                     className={`w-5 h-5 ${
                                       i < Math.floor(userRating / 2)
                                         ? "fill-yellow-500 text-yellow-500"
-                                        : "text-gray-300"
+                                        : "text-muted-foreground"
                                     }`}
                                   />
                                 ))}
@@ -537,23 +548,32 @@ export default function MoviePage() {
                           )}
                           {userReview && (
                             <div className="mt-2">
-                              <p className="text-sm font-medium text-gray-700 mb-1">Your review:</p>
-                              <p className="text-gray-600">"{userReview}"</p>
+                              <p className="text-sm font-medium text-foreground mb-1">Your review:</p>
+                              <p className="text-muted-foreground">"{userReview}"</p>
                             </div>
                           )}
                         </div>
                       )}
 
-                      <div className="flex gap-3">
-                        <Button onClick={handleDeleteMovie} disabled={loadingStatus === "delete"}>
+                      <div className="flex flex-wrap gap-3">
+                        <Button variant="outline" onClick={handleDeleteMovie} disabled={loadingStatus === "delete"}>
+                          {loadingStatus === "delete" ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-2" />
+                          )}
                           Remove
                         </Button>
                         <Button variant="secondary" onClick={() => setShowEditModal(true)}>
-                          <Edit className="w-4 h-4 mr-2" />
+                          <Pencil className="w-4 h-4 mr-2" />
                           Edit Review
                         </Button>
                         <Button onClick={() => handleAddMovie("want")} disabled={loadingStatus === "want"}>
-                          <Bookmark className="w-4 h-4 mr-2" />
+                          {loadingStatus === "want" ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Bookmark className="w-4 h-4 mr-2" />
+                          )}
                           Move to Want List
                         </Button>
                       </div>
@@ -567,16 +587,29 @@ export default function MoviePage() {
                           onClick={() => handleAddMovie("want")}
                           disabled={loadingStatus === "want"}
                         >
-                          <Bookmark className="w-4 h-4 mr-2" />
-                          {loadingStatus === "want" ? "Adding..." : "Want to Watch"}
+                          {loadingStatus === "want" ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Bookmark className="w-4 h-4 mr-2" />
+                          )}
+                          Want to Watch
                         </Button>
                         <Button
                           className="flex-1 py-5"
-                          onClick={() => setShowWatchedModal(true)}
+                          onClick={() => {
+                            setShowWatchedModal(true);
+                            // Reset temp review state when opening modal
+                            setTempRating(null);
+                            setTempReview("");
+                          }}
                           disabled={loadingStatus === "watched"}
                         >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          {loadingStatus === "watched" ? "Marking..." : "Watched"}
+                          {loadingStatus === "watched" ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                          )}
+                          Watched
                         </Button>
                       </div>
                     </div>
@@ -694,16 +727,6 @@ export default function MoviePage() {
                   </DialogContent>
                 </Dialog>
               </CardFooter>
-              {movieStatus === "watched" && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-2">Your Rating & Review</h3>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                    <span className="font-medium">{userRating ? `${userRating}/10` : "No rating"}</span>
-                  </div>
-                  <p className="text-muted-foreground">{userReview || "No review written."}</p>
-                </div>
-              )}
             </Card>
           </div>
         </div>

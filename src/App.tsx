@@ -20,11 +20,13 @@ import ProfilePage from "./pages/profile";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoaderCircle } from "lucide-react";
-import MovieTrackerPage from "./pages/tracker";
+import MovieTrackerPage from "./pages/tracker-movie";
 import UserProfilePage from "./pages/user-profile";
 import { BottomNav } from "./components/bottom-navigation";
 import LeaderboardPage from "./pages/leaderboard";
 import { ScrollToTop } from "./utils/scroll-to-top";
+import SeriesTrackerPage from "./pages/tracker-series";
+import { Toaster } from "sonner";
 
 /* ───── Loading Component ───── */
 const FullScreenLoader = () => {
@@ -54,13 +56,25 @@ function Dashboard() {
   );
 }
 
-function Activity() {
+function ActivityMovie() {
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
         <h1 className="text-2xl font-bold">Activity</h1>
         <p className="text-muted-foreground">Track your movie and series activity here.</p>
         <MovieTrackerPage />
+      </div>
+    </div>
+  );
+}
+
+function ActivitySeries() {
+  return (
+    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <div className="px-4 lg:px-6">
+        <h1 className="text-2xl font-bold">Activity</h1>
+        <p className="text-muted-foreground">Track your movie and series activity here.</p>
+        <SeriesTrackerPage />
       </div>
     </div>
   );
@@ -168,14 +182,15 @@ export default function App() {
         <SiteHeader />
         {/* Add bottom padding for mobile to prevent content overlap */}
         <div className="flex-1 overflow-auto pb-16 md:pb-0">
+          <Toaster position="top-right" />
           <ScrollToTop /> {/* Scroll to top on route change */}
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
             {/* Activity */}
-            <Route path="/activity/movies" element={<Activity />} />
-            <Route path="/activity/tv" element={<Activity />} />
+            <Route path="/activity/movies" element={<ActivityMovie />} />
+            <Route path="/activity/tv" element={<ActivitySeries />} />
 
             {/* Explore */}
             <Route path="/explore/movies" element={<ExploreMoviePage />} />

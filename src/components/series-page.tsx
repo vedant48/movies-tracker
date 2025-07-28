@@ -1,27 +1,26 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type SetStateAction } from "react";
 import { proxyGet } from "@/utils/tmdbProxy";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Star, Clock, Calendar, Play, Info, Popcorn, User, Users, Check, Plus, Bookmark, List } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Star, Clock, Calendar, Play, Info, Popcorn, User, Users, Check, Bookmark, CheckCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import PersonDrawer from "./person-drawer";
-// import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { Slider } from "@/components/ui/slider";
 interface Series {
   id: number;
   name: string;
@@ -53,6 +52,7 @@ interface Series {
     overview: string;
     air_date: string;
   }[];
+  number_of_episodes?: number;
 }
 
 interface Credit {
@@ -103,7 +103,6 @@ export default function SeriesPage() {
   const [error, setError] = useState("");
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
   const [isPersonDrawerOpen, setIsPersonDrawerOpen] = useState(false);
-  //  const { toast } = useToast();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userSeriesStatus, setUserSeriesStatus] = useState<"want" | "watching" | "watched" | null>(null);
   const [userSeasons, setUserSeasons] = useState<Record<number, any>>({});
@@ -114,6 +113,8 @@ export default function SeriesPage() {
   const [seasonReview, setSeasonReview] = useState<string>("");
   const [totalAiredEpisodes, setTotalAiredEpisodes] = useState(0);
   const [watchedEpisodeCount, setWatchedEpisodeCount] = useState(0);
+  const [tempRating, setTempRating] = useState<number | null>(null);
+  const [tempReview, setTempReview] = useState("");
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -134,8 +135,8 @@ export default function SeriesPage() {
         .from("user_series")
         .select("status")
         .eq("user_id", currentUserId)
-        .eq("series_id", parseInt(seriesId))
-        .single();
+        .eq("series_id", parseInt(seriesId));
+      // .single();
 
       if (error && error.code !== "PGRST116") {
         // Ignore not found error
@@ -156,7 +157,7 @@ export default function SeriesPage() {
       if (error) {
         console.error("Error fetching seasons:", error);
       } else {
-        const seasonsMap = data.reduce((acc, row) => {
+        const seasonsMap = data.reduce((acc: { [x: string]: any }, row: { season_number: string | number }) => {
           acc[row.season_number] = row;
           return acc;
         }, {});
@@ -169,7 +170,7 @@ export default function SeriesPage() {
   }, [currentUserId, seriesId]);
 
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
       try {
         setLoading(true);
         const [seriesData, creditsData] = await Promise.all([
@@ -179,11 +180,10 @@ export default function SeriesPage() {
 
         setSeries(seriesData);
         setCredits(creditsData);
-        const validSeasons = seriesData.seasons?.filter((s: Seasons) => s.season_number > 0) || [];
-        if (validSeasons.length > 0) {
-          const firstValidSeason = validSeasons[0];
+
+        const firstValidSeason = seriesData.seasons?.find((s) => s.season_number > 0);
+        if (firstValidSeason) {
           setActiveSeason(firstValidSeason.season_number);
-          fetchSeasonEpisodes(firstValidSeason.season_number);
         }
       } catch (err) {
         console.error("Error loading series:", err);
@@ -191,45 +191,54 @@ export default function SeriesPage() {
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchData();
   }, [seriesId]);
 
-  const fetchSeasonEpisodes = async (seasonNumber: number) => {
-    if (episodesBySeason[seasonNumber]) return;
+  const fetchSeasonEpisodes = useCallback(
+    async (seasonNumber: number) => {
+      if (episodesBySeason[seasonNumber]) return;
 
-    setLoadingEpisodes(true);
-    try {
-      const data = await proxyGet<{ episodes: Episode[] }>(`/v1/tmdb/3/tv/${seriesId}/season/${seasonNumber}`);
-      setEpisodesBySeason((prev) => ({
-        ...prev,
-        [seasonNumber]: data.episodes,
-      }));
+      setLoadingEpisodes(true);
+      try {
+        const data = await proxyGet<{ episodes: Episode[] }>(`/v1/tmdb/3/tv/${seriesId}/season/${seasonNumber}`);
 
-      // Fetch watched episodes for this season
-      if (currentUserId && seriesId) {
-        const { data: watchedData, error } = await supabase
-          .from("user_episodes")
-          .select("episode_id")
-          .eq("user_id", currentUserId)
-          .eq("series_id", parseInt(seriesId))
-          .eq("season_number", seasonNumber);
+        setEpisodesBySeason((prev) => ({
+          ...prev,
+          [seasonNumber]: data.episodes,
+        }));
 
-        if (!error && watchedData) {
-          setWatchedEpisodes((prev) => {
-            const newSet = new Set(prev);
-            watchedData.forEach((ep) => newSet.add(ep.episode_id));
-            return newSet;
-          });
+        if (currentUserId && seriesId) {
+          const { data: watchedData } = await supabase
+            .from("user_episodes")
+            .select("episode_id")
+            .eq("user_id", currentUserId)
+            .eq("series_id", parseInt(seriesId))
+            .eq("season_number", seasonNumber);
+
+          if (watchedData) {
+            setWatchedEpisodes((prev) => {
+              const newSet = new Set(prev);
+              watchedData.forEach((ep) => newSet.add(ep.episode_id));
+              return newSet;
+            });
+          }
         }
+      } catch (err) {
+        console.error(`Error loading episodes for season ${seasonNumber}:`, err);
+      } finally {
+        setLoadingEpisodes(false);
       }
-    } catch (err) {
-      console.error(`Error loading episodes for season ${seasonNumber}:`, err);
-    } finally {
-      setLoadingEpisodes(false);
+    },
+    [seriesId, currentUserId, episodesBySeason]
+  );
+
+  useEffect(() => {
+    if (activeSeason > 0 && currentUserId !== null && series) {
+      fetchSeasonEpisodes(activeSeason);
     }
-  };
+  }, [activeSeason, currentUserId, series, fetchSeasonEpisodes]);
 
   const formatCurrency = (value: number | undefined): string => {
     if (!value) return "N/A";
@@ -292,10 +301,10 @@ export default function SeriesPage() {
     );
 
     if (error) {
-      toast({ title: "Error", description: "Failed to add to want list", variant: "destructive" });
+      toast.error("Failed to add to want list");
       console.error(error);
     } else {
-      toast({ title: "Added to Want List", description: `${series.name} has been added to your want list` });
+      toast.success(`${series.name} has been added to your want list`);
       setUserSeriesStatus("want");
     }
   };
@@ -327,7 +336,7 @@ export default function SeriesPage() {
     );
 
     if (seriesError) {
-      toast({ title: "Error", description: "Failed to mark series as watched", variant: "destructive" });
+      toast.error("Failed to mark series as watched");
       console.error(seriesError);
       return;
     }
@@ -390,7 +399,7 @@ export default function SeriesPage() {
     await Promise.all(seasonPromises);
 
     // Update UI state
-    toast({ title: "Series Watched", description: `${series.name} has been marked as watched` });
+    toast.success(`${series.name} has been marked as watched`);
     setUserSeriesStatus("watched");
     setUserSeasons(newSeasons);
     setWatchedEpisodes((prev) => new Set([...prev, ...allEpisodeIds]));
@@ -408,7 +417,7 @@ export default function SeriesPage() {
       supabase.from("user_episodes").delete().eq("user_id", currentUserId).eq("series_id", series.id),
     ]);
 
-    toast({ title: "Removed", description: `${series.name} has been removed from your lists` });
+    toast.success(`${series.name} has been removed from your lists`);
     setUserSeriesStatus(null);
     setUserSeasons({});
     setWatchedEpisodes(new Set());
@@ -432,7 +441,7 @@ export default function SeriesPage() {
     );
 
     if (seasonError) {
-      toast({ title: "Error", description: "Failed to mark season as watched", variant: "destructive" });
+      toast.error("Failed to mark season as watched");
       console.error(seasonError);
       return;
     }
@@ -461,7 +470,7 @@ export default function SeriesPage() {
       );
     }
 
-    toast({ title: "Season Watched", description: `Season ${seasonNumber} has been marked as watched` });
+    toast.success(`Season ${seasonNumber} has been marked as watched`);
 
     // Update state
     setUserSeasons((prev) => ({
@@ -482,7 +491,7 @@ export default function SeriesPage() {
     setIsSeasonDrawerOpen(true);
   };
 
-  const saveSeasonRating = async () => {
+  const saveSeasonRating = async (rating?: number | null, review?: string) => {
     if (!currentUserId || !series || selectedSeason === null) return;
 
     const { error } = await supabase.from("user_seasons").upsert(
@@ -490,18 +499,18 @@ export default function SeriesPage() {
         user_id: currentUserId,
         series_id: series.id,
         season_number: selectedSeason,
-        rating: seasonRating,
-        review: seasonReview,
+        rating: rating ?? tempRating,
+        review: review ?? tempReview,
         status: "watched",
       },
       { onConflict: "user_id, series_id, season_number" }
     );
 
     if (error) {
-      toast({ title: "Error", description: "Failed to save rating", variant: "destructive" });
+      toast.error("Failed to save rating");
       console.error(error);
     } else {
-      toast({ title: "Rating Saved", description: `Your rating for season ${selectedSeason} has been saved` });
+      toast.success(`Your rating for season ${selectedSeason} has been saved`);
       setUserSeasons((prev) => ({
         ...prev,
         [selectedSeason]: { ...(prev[selectedSeason] || {}), rating: seasonRating, review: seasonReview },
@@ -510,7 +519,6 @@ export default function SeriesPage() {
     }
   };
 
-  // Episode Actions
   const toggleEpisodeWatched = async (episode: Episode) => {
     if (!currentUserId || !series) return;
 
@@ -522,7 +530,7 @@ export default function SeriesPage() {
       setWatchedEpisodeCount((prev) => prev + 1);
     }
     if (!episodeAired) {
-      toast({ title: "Episode Not Aired", description: "This episode hasn't aired yet", variant: "destructive" });
+      toast.error("This episode hasn't aired yet");
       return;
     }
 
@@ -535,7 +543,7 @@ export default function SeriesPage() {
         .eq("episode_id", episode.id);
 
       if (error) {
-        toast({ title: "Error", description: "Failed to mark episode as unwatched", variant: "destructive" });
+        toast.error("Failed to mark episode as unwatched");
         console.error(error);
       } else {
         // Update watched episodes
@@ -563,7 +571,7 @@ export default function SeriesPage() {
       );
 
       if (error) {
-        toast({ title: "Error", description: "Failed to mark episode as watched", variant: "destructive" });
+        toast.error("Failed to mark episode as watched");
         console.error(error);
       } else {
         // Update watched episodes
@@ -574,6 +582,59 @@ export default function SeriesPage() {
         // Update season status
         updateSeasonStatus(episode.season_number);
       }
+    }
+  };
+
+  const updateSeasonStatus = async (seasonNumber: number) => {
+    if (!currentUserId || !series) return;
+
+    // Get all episodes for this season
+    const episodes = episodesBySeason[seasonNumber] || [];
+    const airedEpisodes = episodes.filter((ep) => ep.air_date && new Date(ep.air_date) <= new Date());
+
+    // Get watched episodes for this season
+    const { data: watchedData, error } = await supabase
+      .from("user_episodes")
+      .select("episode_id")
+      .eq("user_id", currentUserId)
+      .eq("series_id", series.id)
+      .eq("season_number", seasonNumber);
+
+    if (error) {
+      console.error("Error fetching watched episodes:", error);
+      return;
+    }
+
+    const watchedIds = new Set(watchedData.map((item: { episode_id: any }) => item.episode_id));
+    const watchedCount = airedEpisodes.filter((ep) => watchedIds.has(ep.id)).length;
+
+    // Determine new status
+    let newStatus = "unwatched";
+    if (watchedCount === airedEpisodes.length) {
+      newStatus = "watched";
+    } else if (watchedCount > 0) {
+      newStatus = "watching";
+    }
+
+    // Update season status
+    const { error: seasonError } = await supabase.from("user_seasons").upsert(
+      {
+        user_id: currentUserId,
+        series_id: series.id,
+        season_number: seasonNumber,
+        status: newStatus,
+      },
+      { onConflict: "user_id, series_id, season_number" }
+    );
+
+    if (seasonError) {
+      console.error("Error updating season status:", seasonError);
+    } else {
+      // Update state
+      setUserSeasons((prev) => ({
+        ...prev,
+        [seasonNumber]: { ...(prev[seasonNumber] || {}), status: newStatus },
+      }));
     }
   };
 
@@ -601,7 +662,7 @@ export default function SeriesPage() {
     if (!currentUserId || !series) return;
 
     // Calculate watched percentage
-    const percentage = totalAiredEpisodes > 0 ? Math.round((watchedEpisodeCount / totalAiredEpisodes) * 100) : 0;
+    // const percentage = totalAiredEpisodes > 0 ? Math.round((watchedEpisodeCount / totalAiredEpisodes) * 100) : 0;
 
     let newStatus = userSeriesStatus;
 
@@ -714,6 +775,8 @@ export default function SeriesPage() {
       </div>
     );
   }
+
+  console.log("userSeasons:", userSeasons);
 
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -879,7 +942,7 @@ export default function SeriesPage() {
                             <Check className="w-4 h-4" />
                             {userSeriesStatus === "want"
                               ? "Want to Watch"
-                              : `Watched (${watchedEpisodeCount}/${totalAiredEpisodes})`}
+                              : `Watched (${watchedEpisodeCount}/${series?.number_of_episodes ?? 1})`}
                           </Button>
                           <Button variant="outline" onClick={removeFromList}>
                             Remove
@@ -905,9 +968,21 @@ export default function SeriesPage() {
                         <div
                           className="bg-blue-600 h-2.5 rounded-full"
                           style={{
-                            width: `${Math.min(100, Math.round((watchedEpisodeCount / totalAiredEpisodes) * 100))}%`,
+                            width: `${Math.min(
+                              100,
+                              Math.round((watchedEpisodeCount / (series?.number_of_episodes ?? 1)) * 100)
+                            )}%`,
                           }}
                         ></div>
+                        <div className="flex justify-between text-xs mt-1">
+                          <span>
+                            {watchedEpisodeCount} / {series?.number_of_episodes ?? 1} watched
+                          </span>
+                          <span>
+                            {Math.min(100, Math.round((watchedEpisodeCount / (series?.number_of_episodes ?? 1)) * 100))}
+                            %
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -928,11 +1003,31 @@ export default function SeriesPage() {
               {currentUserId && (
                 <div className="flex gap-2">
                   {userSeasons[activeSeason]?.status === "watched" && (
-                    <Button variant="outline" onClick={() => openSeasonRating(activeSeason)}>
-                      <Star className="w-4 h-4 mr-2" />
-                      Rate Season
-                    </Button>
+                    <div className="mt-4 space-y-2">
+                      {userSeasons[activeSeason]?.rating === undefined ? (
+                        <Button variant="outline" onClick={() => openSeasonRating(activeSeason)}>
+                          <Star className="w-4 h-4 mr-2" />
+                          Rate Season
+                        </Button>
+                      ) : (
+                        <>
+                          <div className="flex items-center space-x-2">
+                            <Star className="w-4 h-4 text-yellow-500" />
+                            <span className="font-medium">Your Rating:</span>
+                            <span>{userSeasons[activeSeason].rating}/10</span>
+                          </div>
+                          {userSeasons[activeSeason]?.review && (
+                            <div className="text-sm text-gray-600 italic">“{userSeasons[activeSeason].review}”</div>
+                          )}
+                          <Button variant="outline" onClick={() => openSeasonRating(activeSeason)}>
+                            <Star className="w-4 h-4 mr-2" />
+                            Edit Rating
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   )}
+
                   <Button
                     variant="secondary"
                     onClick={() => markSeasonAsWatched(activeSeason)}
@@ -1060,77 +1155,81 @@ export default function SeriesPage() {
         )}
 
         <div className="mt-12">
-          <div className="mb-10">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <User className="w-5 h-5" /> Cast
-            </h3>
-            <div className="overflow-x-auto scrollbar-hide">
-              <div className="flex gap-6 pb-4">
-                {topCast.map((person) => (
-                  <div
-                    key={person.id}
-                    className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
-                    onClick={() => handlePersonClick(person.id)}
-                  >
-                    <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
-                      {person.profile_path ? (
-                        <img
-                          src={`https://image.tmdb.org/t/p/w200${person.profile_path}`}
-                          alt={person.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
-                          <User className="w-8 h-8" />
-                        </div>
-                      )}
+          {topCast.length > 0 && (
+            <div className="mb-10">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <User className="w-5 h-5" /> Cast
+              </h3>
+              <div className="overflow-x-auto scrollbar-hide">
+                <div className="flex gap-6 pb-4">
+                  {topCast.map((person) => (
+                    <div
+                      key={person.id}
+                      className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
+                      onClick={() => handlePersonClick(person.id)}
+                    >
+                      <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
+                        {person.profile_path ? (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w200${person.profile_path}`}
+                            alt={person.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
+                            <User className="w-8 h-8" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center">
+                        <p className="font-medium group-hover:text-primary transition-colors">{person.name}</p>
+                        {person.character && (
+                          <p className="text-xs text-muted-foreground truncate w-full">{person.character}</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className="font-medium group-hover:text-primary transition-colors">{person.name}</p>
-                      {person.character && (
-                        <p className="text-xs text-muted-foreground truncate w-full">{person.character}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          <div className="mb-10">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5" /> Crew
-            </h3>
-            <div className="overflow-x-auto scrollbar-hide">
-              <div className="flex gap-6 pb-4">
-                {topCrew.map((person) => (
-                  <div
-                    key={person.id}
-                    className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
-                    onClick={() => handlePersonClick(person.id)}
-                  >
-                    <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
-                      {person.profile_path ? (
-                        <img
-                          src={`https://image.tmdb.org/t/p/w200${person.profile_path}`}
-                          alt={person.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
-                          <User className="w-8 h-8" />
-                        </div>
-                      )}
+          {topCrew?.length > 0 && (
+            <div className="mb-10">
+              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5" /> Crew
+              </h3>
+              <div className="overflow-x-auto scrollbar-hide">
+                <div className="flex gap-6 pb-4">
+                  {topCrew.map((person) => (
+                    <div
+                      key={person.id}
+                      className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
+                      onClick={() => handlePersonClick(person.id)}
+                    >
+                      <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
+                        {person.profile_path ? (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w200${person.profile_path}`}
+                            alt={person.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
+                            <User className="w-8 h-8" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center">
+                        <p className="font-medium group-hover:text-primary transition-colors">{person.name}</p>
+                        {person.job && <p className="text-xs text-muted-foreground truncate w-full">{person.job}</p>}
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className="font-medium group-hover:text-primary transition-colors">{person.name}</p>
-                      {person.job && <p className="text-xs text-muted-foreground truncate w-full">{person.job}</p>}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {series.created_by && series.created_by.length > 0 && (
             <div className="mb-10">
@@ -1168,6 +1267,61 @@ export default function SeriesPage() {
             </div>
           )}
         </div>
+
+        <Dialog open={isSeasonDrawerOpen} onOpenChange={setIsSeasonDrawerOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                Mark as Watched
+              </DialogTitle>
+              <DialogDescription>Share your thoughts about this series</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="rating">Your Rating</Label>
+                <div className="flex items-center gap-3 mt-2">
+                  <Slider
+                    id="rating"
+                    min={0}
+                    max={10}
+                    step={1}
+                    value={[tempRating || 0]}
+                    onValueChange={(val: SetStateAction<number | null>[]) => setTempRating(val[0])}
+                  />
+                  <span className="w-12 text-center font-medium">{tempRating || 0}/10</span>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="review">Your Review</Label>
+                <Textarea
+                  id="review"
+                  value={tempReview}
+                  onChange={(e: { target: { value: SetStateAction<string> } }) => setTempReview(e.target.value)}
+                  placeholder="What did you think of this movie?"
+                  className="mt-2 min-h-[100px]"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsSeasonDrawerOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  saveSeasonRating(tempRating, tempReview);
+                  setIsSeasonDrawerOpen(false);
+                }}
+                disabled={userSeriesStatus === "watched"}
+              >
+                {userSeriesStatus === "watched" ? "Saving..." : "Save & Mark as Watched"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <PersonDrawer personId={selectedPersonId} isOpen={isPersonDrawerOpen} onClose={closePersonDrawer} />
       </div>
