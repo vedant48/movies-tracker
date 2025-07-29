@@ -13,9 +13,7 @@ import SearchPage from "./pages/search";
 import MoviePage from "./components/movie-page";
 import SeriesPage from "./components/series-page";
 import { SectionCards } from "./components/section-cards";
-import { ChartAreaInteractive } from "./components/chart-area-interactive";
-import { DataTable } from "./components/data-table";
-import data from "./data.json";
+import { WatchTimeChart } from "./components/chart-area-interactive";
 import ProfilePage from "./pages/profile";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,8 +26,8 @@ import { ScrollToTop } from "./utils/scroll-to-top";
 import SeriesTrackerPage from "./pages/tracker-series";
 import { Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
+import DashboardInsights from "./components/dashboard-insights";
 
-/* ───── Loading Component ───── */
 const FullScreenLoader = () => {
   return (
     <div className="flex justify-center items-center h-screen bg-background">
@@ -42,16 +40,15 @@ const FullScreenLoader = () => {
   );
 };
 
-/* ───── Dashboard Wrapper ───── */
 function Dashboard() {
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <SectionCards />
         <div className="px-4 lg:px-6">
-          <ChartAreaInteractive />
+          <WatchTimeChart />
         </div>
-        <DataTable data={data} />
+        <DashboardInsights />
       </div>
     </div>
   );
@@ -134,7 +131,7 @@ function ExploreMoviePage() {
             <p className="text-muted-foreground">Discover new movies.</p>
           </div>
           <Button onClick={() => navigate("/explore/tv")} variant="outline" className="text-sm">
-            Switch to TV
+            Switch to Series
           </Button>
         </div>
 
@@ -177,10 +174,9 @@ function Leaderboard() {
   );
 }
 
-/* ───── Main App Component ───── */
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true); // loading state to avoid flicker
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Initial session fetch

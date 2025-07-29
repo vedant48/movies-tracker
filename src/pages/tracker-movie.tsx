@@ -15,7 +15,8 @@ interface UserMovie {
   status: "want" | "watched";
   rating?: number;
   review?: string;
-  from_name?: string; // only for recommended movies
+  from_name?: string;
+  overview?: string;
 }
 
 export default function MovieTrackerPage() {
@@ -147,6 +148,7 @@ function MovieGrid({
             title={movie.title}
             poster_path={movie.poster_path || ""}
             release_date={movie.release_date || ""}
+            overview={movie.overview || ""}
           />
           {showRating && movie.rating !== undefined && (
             <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">

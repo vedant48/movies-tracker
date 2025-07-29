@@ -208,6 +208,18 @@ export default function MoviePage() {
         return;
       }
 
+      const topCast = credits?.cast?.slice(0, 10).map((person) => person.name) || [];
+
+      const topDirectors =
+        credits?.crew
+          ?.filter((person) => person.job === "Director")
+          .map((person) => person.name)
+          .slice(0, 3) || [];
+
+      const genres = movie?.genres?.map((genre) => genre.name) || [];
+
+      const overview = movie?.overview?.slice(0, 200) || "";
+
       const payload: any = {
         user_id: user.id,
         movie_id: movie?.id,
@@ -217,6 +229,10 @@ export default function MoviePage() {
         runtime: movie?.runtime,
         status,
         watched_at: status === "watched" ? new Date().toISOString() : null,
+        genres,
+        cast: topCast,
+        directors: topDirectors,
+        overview,
       };
 
       if (status === "watched") {
