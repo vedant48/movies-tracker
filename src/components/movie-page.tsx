@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Star, Clock, Calendar, Info, Popcorn, User, Users, Film, X, ArrowLeft } from "lucide-react";
+import { Star, Clock, Calendar, Info, Popcorn, User, Users, Film, X, ArrowLeft, Share2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
@@ -25,6 +25,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Bookmark, CheckCircle, Edit, Trash2, Loader2, Pencil } from "lucide-react";
 import PersonDrawer from "./person-drawer";
+import { RecommendDrawer } from "./recommend-drawer";
 
 interface Movie {
   id: number;
@@ -97,6 +98,7 @@ export default function MoviePage() {
   const [tempReview, setTempReview] = useState("");
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
   const [isPersonDrawerOpen, setIsPersonDrawerOpen] = useState(false);
+  const [isRecommendOpen, setIsRecommendOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -621,7 +623,10 @@ export default function MoviePage() {
                     </div>
                   )}
                 </div>
-
+                <Button variant="secondary" onClick={() => setIsRecommendOpen(true)}>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Recommend
+                </Button>
                 {/* Watched Modal */}
                 <Dialog open={showWatchedModal} onOpenChange={setShowWatchedModal}>
                   <DialogContent className="max-w-md">
@@ -732,6 +737,18 @@ export default function MoviePage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                {isRecommendOpen && (
+                  <RecommendDrawer
+                    open={isRecommendOpen}
+                    onClose={() => setIsRecommendOpen(false)}
+                    movie={{
+                      id: movie.id,
+                      title: movie.title,
+                      poster_path: movie.poster_path,
+                      release_date: movie.release_date,
+                    }}
+                  />
+                )}
               </CardFooter>
             </Card>
           </div>
