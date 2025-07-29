@@ -806,38 +806,49 @@ export default function SeriesPage() {
           <div
             className="w-full md:w-1/3 relative"
             onTouchStart={(e) => {
-              const touchStartY = e.touches[0].clientY;
-              const handleTouchMove = (moveEvent: TouchEvent) => {
-                const touchY = moveEvent.touches[0].clientY;
-                if (touchY - touchStartY > 100) {
-                  // Swiped down more than 100px
-                  window.history.back();
+              // Only enable swipe if at top of page
+              if (window.scrollY === 0) {
+                const touchStartY = e.touches[0].clientY;
+                const touchStartTime = Date.now();
+
+                const handleTouchMove = (moveEvent: TouchEvent) => {
+                  // Prevent default to stop pull-to-refresh
+                  moveEvent.preventDefault();
+
+                  const touchY = moveEvent.touches[0].clientY;
+                  const distance = touchY - touchStartY;
+
+                  // Only trigger if swiped down significantly
+                  if (distance > 100) {
+                    window.history.back();
+                    document.removeEventListener("touchmove", handleTouchMove);
+                  }
+                };
+
+                const handleTouchEnd = () => {
                   document.removeEventListener("touchmove", handleTouchMove);
-                }
-              };
-              document.addEventListener("touchmove", handleTouchMove);
-              document.addEventListener(
-                "touchend",
-                () => {
-                  document.removeEventListener("touchmove", handleTouchMove);
-                },
-                { once: true }
-              );
+                  document.removeEventListener("touchend", handleTouchEnd);
+                };
+
+                document.addEventListener("touchmove", handleTouchMove, { passive: false });
+                document.addEventListener("touchend", handleTouchEnd, { once: true });
+              }
             }}
           >
-            <Card className="overflow-hidden border-0 shadow-lg py-0">
+            <Card className="overflow-hidden border-0 shadow-lg py-0 touch-none">
               {series.poster_path ? (
                 <img
                   src={`${IMAGE_BASE_URL}${series.poster_path}`}
                   alt={series.name}
-                  className="w-full object-cover rounded-lg"
+                  className="w-full object-cover rounded-lg touch-none"
                 />
               ) : (
-                <div className="bg-muted border rounded-xl w-full aspect-[2/3] flex items-center justify-center">
+                <div className="bg-muted border rounded-xl w-full aspect-[2/3] flex items-center justify-center touch-none">
                   <Popcorn className="w-16 h-16 text-muted-foreground" />
                 </div>
               )}
             </Card>
+
             {/* Swipe down hint (only visible on mobile) */}
             <div className="md:hidden absolute top-2 left-0 right-0 flex justify-center">
               <div className="bg-black/50 text-white px-3 py-1 rounded-full text-xs flex items-center gap-1">
