@@ -32,7 +32,6 @@ type Series = {
 
 export default function UserProfilePage() {
   const { userId } = useParams();
-  console.log("User ID from params:", userId);
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState({
     followers: 0,

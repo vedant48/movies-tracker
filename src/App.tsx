@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { type Session } from "@supabase/supabase-js";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
 import { supabase } from "@/lib/supabase";
 import SupraAuthPage from "./pages/supra-auth";
@@ -27,6 +27,7 @@ import LeaderboardPage from "./pages/leaderboard";
 import { ScrollToTop } from "./utils/scroll-to-top";
 import SeriesTrackerPage from "./pages/tracker-series";
 import { Toaster } from "sonner";
+import { Button } from "@/components/ui/button";
 
 /* ───── Loading Component ───── */
 const FullScreenLoader = () => {
@@ -57,11 +58,20 @@ function Dashboard() {
 }
 
 function ActivityMovie() {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <h1 className="text-2xl font-bold">Activity</h1>
-        <p className="text-muted-foreground">Track your movie and series activity here.</p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold">Activity</h1>
+            <p className="text-muted-foreground">Track your movie and series activity here.</p>
+          </div>
+          <Button onClick={() => navigate("/activity/tv")} variant="outline" className="text-sm">
+            Switch to Series
+          </Button>
+        </div>
+
         <MovieTrackerPage />
       </div>
     </div>
@@ -69,11 +79,20 @@ function ActivityMovie() {
 }
 
 function ActivitySeries() {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <h1 className="text-2xl font-bold">Activity</h1>
-        <p className="text-muted-foreground">Track your movie and series activity here.</p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold">Activity</h1>
+            <p className="text-muted-foreground">Track your movie and series activity here.</p>
+          </div>
+          <Button onClick={() => navigate("/activity/movies")} variant="outline" className="text-sm">
+            Switch to Movies
+          </Button>
+        </div>
+
         <SeriesTrackerPage />
       </div>
     </div>
@@ -105,11 +124,20 @@ function Profile() {
 }
 
 function ExploreMoviePage() {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <h1 className="text-2xl font-bold">Explore Movies</h1>
-        <p className="text-muted-foreground">Discover new movies.</p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold">Explore Movies</h1>
+            <p className="text-muted-foreground">Discover new movies.</p>
+          </div>
+          <Button onClick={() => navigate("/explore/tv")} variant="outline" className="text-sm">
+            Switch to TV
+          </Button>
+        </div>
+
         <ExploreMovie />
       </div>
     </div>
@@ -117,11 +145,20 @@ function ExploreMoviePage() {
 }
 
 function ExploreTvPage() {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="px-4 lg:px-6">
-        <h1 className="text-2xl font-bold">Explore TV</h1>
-        <p className="text-muted-foreground">Discover new TV series.</p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold">Explore TV</h1>
+            <p className="text-muted-foreground">Discover new TV series.</p>
+          </div>
+          <Button onClick={() => navigate("/explore/movies")} variant="outline" className="text-sm">
+            Switch to Movies
+          </Button>
+        </div>
+
         <ExploreTv />
       </div>
     </div>
@@ -163,7 +200,7 @@ export default function App() {
   }, []);
 
   if (loading) {
-    return <FullScreenLoader />; // Better loading UI
+    return <FullScreenLoader />;
   }
 
   if (!session) {

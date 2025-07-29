@@ -77,7 +77,7 @@ export default function SearchPage() {
   );
 
   const SkeletonGrid = () => (
-    <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 pb-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
       {skeletonArray.map((_, i) => (
         <div key={i} className="space-y-2">
           <Skeleton className="h-[225px] w-[150px] rounded-lg" />
@@ -121,7 +121,7 @@ export default function SearchPage() {
           {loading ? (
             <SkeletonGrid />
           ) : (
-            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 pb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
               {movies.length ? (
                 movies.map((m) => (
                   <MovieCard
@@ -146,7 +146,7 @@ export default function SearchPage() {
           {loading ? (
             <SkeletonGrid />
           ) : (
-            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 pb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
               {series.length ? (
                 series.map((s) => (
                   <SeriesCard

@@ -87,8 +87,6 @@ export function RecommendDrawer({ open, onClose, movie }: RecommendDrawerProps) 
     );
   };
 
-  console.log("Movie object:", movie);
-  console.log("Release date being sent:", movie.release_date);
 
   const handleRecommend = async () => {
     try {
