@@ -806,22 +806,31 @@ export default function SeriesPage() {
           <div
             className="w-full md:w-1/3 relative"
             onTouchStart={(e) => {
-              // Only enable swipe if at top of page
               if (window.scrollY === 0) {
                 const touchStartY = e.touches[0].clientY;
                 const touchStartTime = Date.now();
+                let direction: "up" | "down" | null = null;
 
                 const handleTouchMove = (moveEvent: TouchEvent) => {
-                  // Prevent default to stop pull-to-refresh
-                  moveEvent.preventDefault();
-
                   const touchY = moveEvent.touches[0].clientY;
                   const distance = touchY - touchStartY;
 
-                  // Only trigger if swiped down significantly
-                  if (distance > 100) {
-                    window.history.back();
-                    document.removeEventListener("touchmove", handleTouchMove);
+                  // Determine direction on first significant move
+                  if (!direction && Math.abs(distance) > 10) {
+                    direction = distance > 0 ? "down" : "up";
+                  }
+
+                  // Handle based on direction
+                  if (direction === "down") {
+                    moveEvent.preventDefault();
+                    if (distance > 100) {
+                      window.history.back();
+                      document.removeEventListener("touchmove", handleTouchMove);
+                    }
+                  } else if (direction === "up") {
+                    // Add your swipe-up functionality here
+                    console.log("Swiped up!");
+                    // Example: Expand poster or show details
                   }
                 };
 
@@ -849,10 +858,10 @@ export default function SeriesPage() {
               )}
             </Card>
 
-            {/* Swipe down hint (only visible on mobile) */}
+            {/* Swipe hint (only visible on mobile) */}
             <div className="md:hidden absolute top-2 left-0 right-0 flex justify-center">
               <div className="bg-black/50 text-white px-3 py-1 rounded-full text-xs flex items-center gap-1">
-                <ArrowDown className="w-3 h-3" />
+                <ArrowUpDown className="w-3 h-3" />
                 <span>Swipe down to go back</span>
               </div>
             </div>
