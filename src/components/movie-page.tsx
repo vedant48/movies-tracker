@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Star, Clock, Calendar, Info, Popcorn, User, Users, Film, X } from "lucide-react";
+import { Star, Clock, Calendar, Info, Popcorn, User, Users, Film, X, ArrowLeft, ArrowDown } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "react-router-dom";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
@@ -335,6 +335,12 @@ export default function MoviePage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <div className="hidden md:block px-4 lg:px-6">
+        <Button variant="ghost" onClick={() => window.history.back()} className="flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Button>
+      </div>
       <div className="px-4 lg:px-6">
         {/* Backdrop */}
         {/* {movie.backdrop_path && (
@@ -349,7 +355,28 @@ export default function MoviePage() {
       )} */}
         <div className="flex flex-col md:flex-row gap-8">
           {/* Poster */}
-          <div className="w-full md:w-1/3">
+          <div
+            className="w-full md:w-1/3 relative"
+            onTouchStart={(e) => {
+              const touchStartY = e.touches[0].clientY;
+              const handleTouchMove = (moveEvent: TouchEvent) => {
+                const touchY = moveEvent.touches[0].clientY;
+                if (touchY - touchStartY > 100) {
+                  // Swiped down more than 100px
+                  window.history.back();
+                  document.removeEventListener("touchmove", handleTouchMove);
+                }
+              };
+              document.addEventListener("touchmove", handleTouchMove);
+              document.addEventListener(
+                "touchend",
+                () => {
+                  document.removeEventListener("touchmove", handleTouchMove);
+                },
+                { once: true }
+              );
+            }}
+          >
             <Card className="overflow-hidden border-0 shadow-lg py-0">
               {movie.poster_path ? (
                 <img
@@ -363,6 +390,13 @@ export default function MoviePage() {
                 </div>
               )}
             </Card>
+            {/* Swipe down hint (only visible on mobile) */}
+            <div className="md:hidden absolute top-2 left-0 right-0 flex justify-center">
+              <div className="bg-black/50 text-white px-3 py-1 rounded-full text-xs flex items-center gap-1">
+                <ArrowDown className="w-3 h-3" />
+                <span>Swipe down to go back</span>
+              </div>
+            </div>
           </div>
 
           {/* Movie Details */}
