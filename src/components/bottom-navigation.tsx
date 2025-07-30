@@ -54,7 +54,7 @@ export function BottomNav() {
       icon: IconUserCircle,
     },
     {
-      title: "Users",
+      title: "Leaderboard",
       url: "/users",
       icon: IconUsers,
     },
@@ -64,14 +64,14 @@ export function BottomNav() {
   const primaryItems = [
     navMain[0], // Dashboard
     navMain[1], // Activity
+    navMain[2], // Explore
     navMain[3], // Search
-    navMain[4], // Profile
   ];
 
   // Secondary items go in the "More" menu
   const secondaryItems = [
-    navMain[2], // Explore
-    navMain[5], // Users
+    navMain[4], // Profile
+    navMain[5], // Leaderboard
   ];
 
   // Check active state with path prefix matching
