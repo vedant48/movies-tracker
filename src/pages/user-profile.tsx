@@ -357,7 +357,7 @@ export default function UserProfilePage() {
           </div>
         </Card>
         {/* Additional Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="p-6">
             <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <Heart className="w-5 h-5 text-rose-500" />
@@ -381,7 +381,7 @@ export default function UserProfilePage() {
                 : `This user has watched ${stats.watchedMovies} movies and ${stats.watchedSeries} series.`}
             </p>
           </Card>
-        </div>
+        </div> */}
 
         <Tabs defaultValue="want" className="w-full mt-8">
           {/* Tab Headers */}
@@ -396,7 +396,7 @@ export default function UserProfilePage() {
             {wantMoviesList.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-2">Movies</h3>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 pb-4">
                   {wantMoviesList.map((movie) => (
                     <MovieCard
                       key={movie.id}
@@ -414,7 +414,7 @@ export default function UserProfilePage() {
             {wantSeriesList.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-2">Series</h3>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 pb-4">
                   {wantSeriesList.map((series) => (
                     <MovieCard
                       key={series.id}
@@ -435,7 +435,7 @@ export default function UserProfilePage() {
             {watchedMoviesList.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-2">Movies</h3>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 pb-4">
                   {watchedMoviesList.map((movie) => (
                     <MovieCard
                       key={movie.id}
@@ -453,7 +453,7 @@ export default function UserProfilePage() {
             {watchedSeriesList.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-2">Series</h3>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 pb-4">
                   {watchedSeriesList.map((series) => (
                     <MovieCard
                       key={series.id}

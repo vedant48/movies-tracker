@@ -25,9 +25,6 @@ type Series = {
   overview: string;
 };
 
-const IMAGE_PLACEHOLDER =
-  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2U2ZTZlNiIgdmlld0JveD0iMCAwIDEwMCAxNTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxNTAiIHJ4PSIyMCIvPjxwYXRoIGQ9Ik0wIDExMEgxMDBWMTEySDB6IiBmaWxsPSIjZGRkIiBvcGFjaXR5PSIuNSIvPjwvc3ZnPg==";
-
 const skeletonArray = Array.from({ length: 16 });
 
 export default function SearchPage() {
@@ -77,7 +74,7 @@ export default function SearchPage() {
   );
 
   const SkeletonGrid = () => (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 pb-4">
       {skeletonArray.map((_, i) => (
         <div key={i} className="space-y-2">
           <Skeleton className="h-[225px] w-[150px] rounded-lg" />
@@ -121,14 +118,14 @@ export default function SearchPage() {
           {loading ? (
             <SkeletonGrid />
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 pb-4">
               {movies.length ? (
                 movies.map((m) => (
                   <MovieCard
                     key={m.id}
                     id={m.id}
                     title={m.title || "Untitled"}
-                    poster_path={m.poster_path || IMAGE_PLACEHOLDER}
+                    poster_path={m.poster_path || ""}
                     release_date={m.release_date || "N/A"}
                     vote_average={m.vote_average || 0}
                     overview={m.overview}
@@ -146,14 +143,14 @@ export default function SearchPage() {
           {loading ? (
             <SkeletonGrid />
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 pb-4">
               {series.length ? (
                 series.map((s) => (
                   <SeriesCard
                     key={s.id}
                     id={s.id}
                     name={s.name || "Untitled"}
-                    poster_path={s.poster_path || IMAGE_PLACEHOLDER}
+                    poster_path={s.poster_path || ""}
                     first_air_date={s.first_air_date || "N/A"}
                     vote_average={s.vote_average || 0}
                   />

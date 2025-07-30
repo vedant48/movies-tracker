@@ -2,13 +2,25 @@ import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/lib/supabase";
+import { User } from "lucide-react";
+import PersonDrawer from "./person-drawer";
+import { Badge } from "./ui/badge";
+import GenreDrawer from "./genre-drawer";
+
+type GenreInfo = { id: number; name: string; count: number };
 
 export default function DashboardInsights() {
-  const [genreData, setGenreData] = useState<{ [genre: string]: number }>({});
-  const [topDirectors, setTopDirectors] = useState<string[]>([]);
-  const [topActors, setTopActors] = useState<string[]>([]);
+  const [genreData, setGenreData] = useState<GenreInfo[]>([]);
+  const [recommendations, setRecommendations] = useState<GenreInfo[]>([]);
+  const [topDirectors, setTopDirectors] = useState<any[]>([]);
+  const [topCast, setTopCast] = useState<any[]>([]);
   const [genreScore, setGenreScore] = useState(0);
-  const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
+  const [selectedDirectorId, setSelectedDirectorId] = useState<number | null>(null);
+  const [isDirectorDrawerOpen, setDirectorDrawerOpen] = useState(false);
+  const [selectedGenreId, setSelectedGenreId] = useState<number | null>(null);
+  const [selectedGenreName, setSelectedGenreName] = useState<string | null>(null);
+  const [isGenreDrawerOpen, setGenreDrawerOpen] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -25,47 +37,86 @@ export default function DashboardInsights() {
 
       if (error || !movies) return;
 
-      const genreCount: { [genre: string]: number } = {};
+      const genreCount: { [name: string]: { id: number; count: number } } = {};
       const directorCount: { [name: string]: number } = {};
-      const actorCount: { [name: string]: number } = {};
+      const castCount: { [id: number]: { name: string; profile_path: string; count: number } } = {};
 
-      movies.forEach((movie) => {
-        (movie.genres || []).forEach((genre: string) => {
-          genreCount[genre] = (genreCount[genre] || 0) + 1;
+      movies.forEach((movie: { genres: any; directors: any; cast: any }) => {
+        (movie.genres || []).forEach((genre: { id: number; name: string }) => {
+          if (!genreCount[genre.name]) {
+            genreCount[genre.name] = { id: genre.id, count: 0 };
+          }
+          genreCount[genre.name].count += 1;
         });
 
-        (movie.directors || []).forEach((name: string) => {
-          directorCount[name] = (directorCount[name] || 0) + 1;
+        (movie.directors || []).forEach((person: { name: string }) => {
+          directorCount[person.name] = (directorCount[person.name] || 0) + 1;
         });
 
-        (movie.cast || []).forEach((name: string) => {
-          actorCount[name] = (actorCount[name] || 0) + 1;
+        (movie.cast || []).forEach((person: { id: number; name: string; profile_path: string }) => {
+          if (!castCount[person.id]) {
+            castCount[person.id] = { ...person, count: 0 };
+          }
+          castCount[person.id].count++;
         });
       });
 
-      const totalGenreCount = Object.values(genreCount).reduce((a, b) => a + b, 0);
+      const totalGenreCount = Object.values(genreCount).reduce((a, b) => a + b.count, 0);
       const diversityScore = Object.keys(genreCount).length / Math.max(totalGenreCount, 1);
       setGenreScore(Number((diversityScore * 100).toFixed(1)));
 
-      const sortedGenres = Object.entries(genreCount).sort((a, b) => b[1] - a[1]);
+      const sortedGenres = Object.entries(genreCount).sort((a, b) => b[1].count - a[1].count);
       const sortedDirectors = Object.entries(directorCount).sort((a, b) => b[1] - a[1]);
-      const sortedActors = Object.entries(actorCount).sort((a, b) => b[1] - a[1]);
+      const sortedCast = Object.values(castCount).sort((a, b) => b.count - a.count);
 
-      setGenreData(Object.fromEntries(sortedGenres.slice(0, 5)));
-      setTopDirectors(sortedDirectors.slice(0, 5).map(([name]) => name));
-      setTopActors(sortedActors.slice(0, 5).map(([name]) => name));
+      setGenreData(
+        sortedGenres.slice(0, 5).map(([name, { id, count }]) => ({
+          id,
+          name,
+          count,
+        }))
+      );
+      const directorDetails = sortedDirectors
+        .slice(0, 5)
+        .map(([name]) => {
+          const movie = movies.find((m: { directors: any }) =>
+            (m.directors || []).some((d: { name: string }) => d.name === name)
+          );
+          const person = movie?.directors?.find((d: { name: string }) => d.name === name);
+          return person ? { ...person, count: directorCount[name] } : null;
+        })
+        .filter(Boolean);
 
-      // Recommendations: genres with low count but watched at least once
+      setTopDirectors(directorDetails);
+      setTopCast(sortedCast.slice(0, 6));
+
       const genreThreshold = totalGenreCount / Object.keys(genreCount).length;
       const trendingGenres = sortedGenres
-        .filter(([_, count]) => count <= genreThreshold)
-        .map(([genre]) => genre)
-        .slice(0, 3);
+        .filter(([_, genreObj]) => genreObj.count <= genreThreshold)
+        .slice(0, 3)
+        .map(([name, { id, count }]) => ({ id, name, count }));
       setRecommendations(trendingGenres);
     };
 
     fetchStats();
   }, []);
+
+  const handlePersonClick = (id: number) => setSelectedPersonId(id);
+  const closePersonDrawer = () => setSelectedPersonId(null);
+  const handleDirectorClick = (id: number) => {
+    setSelectedDirectorId(id);
+    setDirectorDrawerOpen(true);
+  };
+  const handleGenreClick = (id: number, name: string) => {
+    setSelectedGenreId(id);
+    setSelectedGenreName(name);
+    setGenreDrawerOpen(true);
+  };
+
+  const closeDirectorDrawer = () => {
+    setDirectorDrawerOpen(false);
+    setSelectedDirectorId(null);
+  };
 
   return (
     <div className="grid grid-cols-1 gap-4 px-4 lg:grid-cols-2 xl:grid-cols-3 lg:px-6">
@@ -80,9 +131,15 @@ export default function DashboardInsights() {
           <div className="mt-4">
             <h4 className="font-medium text-sm mb-2">Top Genres Watched</h4>
             <ul className="list-disc pl-5 space-y-1">
-              {Object.entries(genreData).map(([genre, count]) => (
-                <li key={genre} className="text-sm">
-                  {genre} ({count}x)
+              {genreData.map((genre) => (
+                <li key={genre.name}>
+                  <Badge
+                    variant="secondary"
+                    className="px-3 py-1 text-sm font-medium cursor-pointer"
+                    onClick={() => handleGenreClick(genre.id, genre.name)}
+                  >
+                    {genre.name} ({genre.count}x)
+                  </Badge>
                 </li>
               ))}
             </ul>
@@ -94,14 +151,31 @@ export default function DashboardInsights() {
         <CardHeader>
           <CardTitle>Most Watched Directors</CardTitle>
         </CardHeader>
-        <CardContent>
-          <ul className="list-decimal pl-5 space-y-1">
-            {topDirectors.map((name) => (
-              <li key={name} className="text-sm">
-                {name}
-              </li>
-            ))}
-          </ul>
+        <CardContent className="flex gap-4 overflow-x-auto">
+          {topDirectors.map((person) => (
+            <div
+              key={person}
+              className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
+              onClick={() => handleDirectorClick(person.id)}
+            >
+              <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
+                {person.profile_path ? (
+                  <img
+                    src={`https://image.tmdb.org/t/p/w200${person.profile_path}`}
+                    alt={person.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
+                    <User className="w-8 h-8" />
+                  </div>
+                )}
+              </div>
+              <div className="text-center">
+                <p className="font-medium group-hover:text-primary transition-colors">{person.name}</p>
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
@@ -110,13 +184,32 @@ export default function DashboardInsights() {
           <CardTitle>Most Watched Actors</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="list-decimal pl-5 space-y-1">
-            {topActors.map((name) => (
-              <li key={name} className="text-sm">
-                {name}
-              </li>
+          <div className="flex flex-wrap gap-4">
+            {topCast.map((person) => (
+              <div
+                key={person.id}
+                className="flex flex-col items-center gap-2 w-24 flex-shrink-0 group cursor-pointer"
+                onClick={() => handlePersonClick(person.id)}
+              >
+                <div className="rounded-full w-20 h-20 overflow-hidden border-2 border-gray-200 group-hover:border-primary transition-colors">
+                  {person.profile_path ? (
+                    <img
+                      src={`https://image.tmdb.org/t/p/w200${person.profile_path}`}
+                      alt={person.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="bg-gray-200 border-2 border-dashed rounded-full w-full h-full flex items-center justify-center text-gray-400">
+                      <User className="w-8 h-8" />
+                    </div>
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="font-medium group-hover:text-primary transition-colors">{person.name}</p>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </CardContent>
       </Card>
 
@@ -126,15 +219,36 @@ export default function DashboardInsights() {
           <CardDescription>Genres you explored less, try more!</CardDescription>
         </CardHeader>
         <CardContent>
-          <ul className="list-disc pl-5 space-y-1">
+          <ul className="flex flex-wrap gap-2 pl-1">
             {recommendations.map((genre) => (
-              <li key={genre} className="text-sm">
-                {genre}
+              <li key={genre.name}>
+                <Badge
+                  variant="secondary"
+                  className="px-3 py-1 text-sm font-medium cursor-pointer"
+                  onClick={() => handleGenreClick(genre.id, genre.name)}
+                >
+                  {genre.name}
+                </Badge>
               </li>
             ))}
           </ul>
         </CardContent>
       </Card>
+
+      {selectedPersonId && (
+        <PersonDrawer personId={selectedPersonId} isOpen={!!selectedPersonId} onClose={closePersonDrawer} />
+      )}
+      {isDirectorDrawerOpen && (
+        <PersonDrawer personId={selectedDirectorId} isOpen={isDirectorDrawerOpen} onClose={closeDirectorDrawer} />
+      )}
+      {isGenreDrawerOpen && (
+        <GenreDrawer
+          genreId={selectedGenreId}
+          genreName={selectedGenreName || ""}
+          isOpen={isGenreDrawerOpen}
+          onClose={() => setGenreDrawerOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -8,6 +8,9 @@ import {
   IconListDetails,
   IconChartBar,
   IconDots,
+  IconCompass,
+  IconUsers,
+  IconActivity,
 } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -26,7 +29,7 @@ export function BottomNav() {
     },
     {
       title: "Activity",
-      icon: IconListDetails,
+      icon: IconActivity,
       children: [
         { title: "Movies", url: "/activity/movies", icon: IconMovie },
         { title: "TV Series", url: "/activity/tv", icon: IconDeviceTvOld },
@@ -34,7 +37,7 @@ export function BottomNav() {
     },
     {
       title: "Explore",
-      icon: IconChartBar,
+      icon: IconCompass,
       children: [
         { title: "Movies", url: "/explore/movies", icon: IconMovie },
         { title: "TV Series", url: "/explore/tv", icon: IconDeviceTvOld },
@@ -53,7 +56,7 @@ export function BottomNav() {
     {
       title: "Users",
       url: "/users",
-      icon: IconUserCircle,
+      icon: IconUsers,
     },
   ];
 

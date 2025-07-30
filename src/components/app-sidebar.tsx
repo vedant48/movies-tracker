@@ -1,14 +1,19 @@
 import * as React from "react";
 import {
-  IconChartBar,
   IconDashboard,
-  IconFolder,
-  IconInnerShadowTop,
   IconListDetails,
+  IconChartBar,
+  IconSearch,
+  IconUser,
   IconUsers,
-  IconChevronDown,
   IconMovie,
   IconDeviceTvOld,
+  IconInnerShadowTop,
+  IconChevronDown,
+  IconCompass,
+  IconHome,
+  IconUserCircle,
+  IconActivity,
 } from "@tabler/icons-react";
 import { useLocation, Link } from "react-router-dom";
 import { useState } from "react";
@@ -28,6 +33,7 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { getCurrentUser } from "../utils/user";
+import { FilmIcon } from "lucide-react";
 
 const user = await getCurrentUser();
 
@@ -41,11 +47,11 @@ const data = {
     {
       title: "Dashboard",
       url: "/",
-      icon: IconDashboard,
+      icon: IconHome,
     },
     {
       title: "Activity",
-      icon: IconListDetails,
+      icon: IconActivity,
       children: [
         { title: "Movies", url: "/activity/movies", icon: IconMovie },
         { title: "TV Series", url: "/activity/tv", icon: IconDeviceTvOld },
@@ -53,7 +59,7 @@ const data = {
     },
     {
       title: "Explore",
-      icon: IconChartBar,
+      icon: IconCompass,
       children: [
         { title: "Movies", url: "/explore/movies", icon: IconMovie },
         { title: "TV Series", url: "/explore/tv", icon: IconDeviceTvOld },
@@ -62,17 +68,17 @@ const data = {
     {
       title: "Search",
       url: "/search",
-      icon: IconFolder,
+      icon: IconSearch, // Changed from IconFolder to IconSearch
     },
     {
       title: "Profile",
       url: "/profile",
-      icon: IconUsers,
+      icon: IconUserCircle, // Changed from IconUsers to IconUser (single person)
     },
     {
       title: "Users",
       url: "/users",
-      icon: IconUsers,
+      icon: IconUsers, // Correct for multiple users
     },
   ],
 };
@@ -101,8 +107,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
               <Link to="/" className="flex items-center gap-2">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">MoviesFind</span>
+                <FilmIcon className="!size-5" />
+                <span className="text-base font-semibold">Want2Watch</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

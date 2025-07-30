@@ -208,15 +208,31 @@ export default function MoviePage() {
         return;
       }
 
-      const topCast = credits?.cast?.slice(0, 10).map((person) => person.name) || [];
+      // Top 6 cast members: { id, name, profile_path }
+      const topCast =
+        credits?.cast?.slice(0, 6).map((person) => ({
+          id: person.id,
+          name: person.name,
+          profile_path: person.profile_path,
+        })) || [];
 
+      // Top 3 directors: { id, name, profile_path }
       const topDirectors =
         credits?.crew
           ?.filter((person) => person.job === "Director")
-          .map((person) => person.name)
-          .slice(0, 3) || [];
+          .slice(0, 3)
+          .map((person) => ({
+            id: person.id,
+            name: person.name,
+            profile_path: person.profile_path,
+          })) || [];
 
-      const genres = movie?.genres?.map((genre) => genre.name) || [];
+      // Genres: { id, name }
+      const genres =
+        movie?.genres?.map((genre) => ({
+          id: genre.id,
+          name: genre.name,
+        })) || [];
 
       const overview = movie?.overview?.slice(0, 200) || "";
 
@@ -777,7 +793,7 @@ export default function MoviePage() {
               <h2 className="text-2xl font-bold">The {collection.name} Collection</h2>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4">
               {collection.parts.map((item) => (
                 <MovieCard
                   key={item.id}

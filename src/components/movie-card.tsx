@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { Star } from "lucide-react";
+import { Film, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface MovieCardProps {
@@ -28,11 +28,8 @@ export function MovieCard({ id, title, poster_path, release_date, vote_average, 
                 className="rounded-lg w-full h-[225px] object-cover shadow-md group-hover:blur-sm transition-all duration-300"
               />
             ) : (
-              <div className="bg-muted border-2 border-dashed rounded-xl w-full h-full flex items-center justify-center">
-                <div className="text-muted-foreground text-center p-4">
-                  <div className="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 mx-auto" />
-                  <p className="mt-2 font-medium">No image</p>
-                </div>
+              <div className="bg-muted border-2 border-dashed rounded-xl w-full h-[225px] flex items-center justify-center">
+                <Film className="w-12 h-12 text-muted-foreground" />
               </div>
             )}
 
