@@ -24,6 +24,7 @@ import { supabase } from "@/lib/supabase";
 // import { useAuth } from "@/hooks/use-auth";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "react-router-dom";
 
 const FeedPage = () => {
   const [posts, setPosts] = useState<any[]>([]);
@@ -44,9 +45,11 @@ const FeedPage = () => {
     const fetchFeed = async (user: any) => {
       setLoading(true);
       try {
+        // Fetch all movies except those posted by the current user
         const { data: movies } = await supabase
           .from("user_movies")
           .select("*, profiles:user_id (username, avatar_url)")
+          //   .neq("user_id", user?.id)
           .order("created_at", { ascending: false });
 
         if (!movies) {
@@ -332,35 +335,56 @@ const FeedPage = () => {
                     <div className="font-semibold">{post.profiles?.username || "Unknown User"}</div>
                     <div className="text-xs text-muted-foreground flex items-center gap-2">
                       {renderStatusBadge(post.status)}
-                      <span>• {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                      <span
+                        title={String(
+                          new Date(new Date(post.created_at).getTime() + (5 * 60 + 30) * 60 * 1000)
+                            .toLocaleString("en-IN", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })
+                            .replace(/\s(am|pm)$/i, (match) => match.toUpperCase())
+                        )}
+                      >
+                        •{" "}
+                        {formatDistanceToNow(
+                          new Date(new Date(post.created_at).getTime() + (5 * 60 + 30) * 60 * 1000),
+                          { addSuffix: true }
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon">
+                {/* <Button variant="ghost" size="icon">
                   <MoreHorizontal className="w-5 h-5" />
-                </Button>
+                </Button> */}
               </div>
 
               {/* Movie Details */}
               <div className="p-4 flex gap-4">
                 <div className="w-24 flex-shrink-0">
-                  <div className="rounded-lg overflow-hidden border aspect-[2/3] bg-muted">
-                    {post.poster_path ? (
-                      <img
-                        src={`https://image.tmdb.org/t/p/w200${post.poster_path}`}
-                        alt={post.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <User className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
+                  <Link to={`/movie/${post.movie_id}`} className="block">
+                    <div className="rounded-lg overflow-hidden border aspect-[2/3] bg-muted">
+                      {post.poster_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w200${post.poster_path}`}
+                          alt={post.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <User className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  </Link>
                 </div>
 
                 <div className="flex-1">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col items-start justify-between">
                     <div>
                       <h3 className="font-bold text-lg">{post.title}</h3>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -382,6 +406,11 @@ const FeedPage = () => {
                       </div>
                     </div>
 
+                    {post.review && (
+                      <div className="mb-3 bg-muted/50 p-3 rounded-lg">
+                        <p className="text-muted-foreground italic">"{post.review}"</p>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
@@ -407,12 +436,6 @@ const FeedPage = () => {
                       </Button>
                     </div>
                   </div>
-
-                  {post.review && (
-                    <div className="mt-3 bg-muted/50 p-3 rounded-lg">
-                      <p className="text-muted-foreground italic">"{post.review}"</p>
-                    </div>
-                  )}
 
                   {newPostStatus[post.movie_id] === "added" && (
                     <div className="mt-2 text-green-600 text-sm">Added to your list!</div>
@@ -447,10 +470,10 @@ const FeedPage = () => {
                   </Button>
                 </div>
 
-                <Button variant="ghost" size="icon">
+                {/* <Button variant="ghost" size="icon">
                   <Bookmark className={`w-5 h-5 ${false ? "fill-blue-500 text-blue-500" : ""}`} />
                   <span className="sr-only">Save</span>
-                </Button>
+                </Button> */}
               </div>
 
               {/* Likes and comments summary */}
@@ -487,8 +510,25 @@ const FeedPage = () => {
                             <div className="font-medium">{comment.profiles?.username || "Unknown"}</div>
                             <p>{comment.text}</p>
                           </div>
-                          <div className="text-xs text-muted-foreground mt-1 ml-1">
-                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                          <div
+                            className="text-xs text-muted-foreground mt-1 ml-1"
+                            title={String(
+                              new Date(new Date(comment.created_at).getTime() + (5 * 60 + 30) * 60 * 1000)
+                                .toLocaleString("en-IN", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })
+                                .replace(/\s(am|pm)$/i, (match) => match.toUpperCase())
+                            )}
+                          >
+                            {formatDistanceToNow(
+                              new Date(new Date(comment.created_at).getTime() + (5 * 60 + 30) * 60 * 1000),
+                              { addSuffix: true }
+                            )}
                           </div>
                         </div>
                       </div>
@@ -517,12 +557,12 @@ const FeedPage = () => {
         </div>
       )}
 
-      {/* Floating action button for mobile */}
+      {/* Floating action button for mobile
       <div className="fixed bottom-6 right-6 md:hidden">
         <Button size="lg" className="rounded-full w-14 h-14 p-0">
           <Plus className="w-8 h-8" />
         </Button>
-      </div>
+      </div> */}
     </div>
   );
 };
