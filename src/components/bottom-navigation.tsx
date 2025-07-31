@@ -58,6 +58,11 @@ export function BottomNav() {
       url: "/users",
       icon: IconUsers,
     },
+    {
+      title: "Feed",
+      url: "/feed",
+      icon: IconListDetails,
+    },
   ];
 
   // Primary items for bottom nav (max 4)
@@ -72,6 +77,7 @@ export function BottomNav() {
   const secondaryItems = [
     navMain[4], // Profile
     navMain[5], // Leaderboard
+    navMain[6], // Feed
   ];
 
   // Check active state with path prefix matching

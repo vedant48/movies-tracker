@@ -50,6 +50,11 @@ const data = {
       icon: IconHome,
     },
     {
+      title: "Feed",
+      url: "/feed",
+      icon: IconListDetails,
+    },
+    {
       title: "Activity",
       icon: IconActivity,
       children: [

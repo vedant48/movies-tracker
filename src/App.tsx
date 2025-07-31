@@ -27,6 +27,7 @@ import SeriesTrackerPage from "./pages/tracker-series";
 import { Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
 import DashboardInsights from "./components/dashboard-insights";
+import FeedPage from "./pages/feed";
 
 const FullScreenLoader = () => {
   return (
@@ -221,25 +222,21 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
+            <Route path="/feed" element={<FeedPage />} />
             {/* Activity */}
             <Route path="/activity/movies" element={<ActivityMovie />} />
             <Route path="/activity/tv" element={<ActivitySeries />} />
-
             {/* Explore */}
             <Route path="/explore/movies" element={<ExploreMoviePage />} />
             <Route path="/explore/tv" element={<ExploreTvPage />} />
-
             {/* Search / Profile */}
             <Route path="/search" element={<Search />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/:userId" element={<UserProfilePage />} />
-
             {/* Details */}
             <Route path="/movie/:id" element={<MoviePage />} />
             <Route path="/series/:id" element={<SeriesPage />} />
-
             <Route path="/users" element={<Leaderboard />} />
-
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
